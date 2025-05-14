@@ -1,7 +1,9 @@
 import streamlit as st
 from pptx import Presentation
-from pptx.util import Inches, Pt, MSO_VERTICAL_ANCHOR
-from pptx.enum.text import PP_ALIGN
+import streamlit as st
+from pptx import Presentation
+from pptx.util import Inches, Pt  # MSO_VERTICAL_ANCHOR 제거
+from pptx.enum.text import PP_ALIGN, MSO_VERTICAL_ANCHOR # MSO_VERTICAL_ANCHOR 추가
 from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE
 import io
