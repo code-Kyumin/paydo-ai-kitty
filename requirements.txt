@@ -1,6 +1,6 @@
 streamlit
 sentence-transformers
-python-pptx==0.6.21
+python-pptx
 kss
 docx
 PyYAML==6.0.1  # 특정 버전으로 고정
