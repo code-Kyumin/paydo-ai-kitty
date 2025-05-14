@@ -194,7 +194,7 @@ def split_text_into_slides_with_similarity(text_paragraphs, max_lines_per_slide,
         
     return slides, split_flags
 
-def create_ppt(slides_data, max_chars_per_line_in_ppt, font_size_pt, 
+def create_ppt(slides_data, max_chars_per_line_in_ppt, font_size_pt,
                font_name_to_use, template_path=None, transition_type=None):
     """PPT 생성 (템플릿, 전환 효과, 글꼴 설정)"""
 
@@ -215,7 +215,7 @@ def create_ppt(slides_data, max_chars_per_line_in_ppt, font_size_pt,
             if template_path and len(prs.slides) > i:
                 slide = prs.slides[i]  # Use existing slide from template
             else:
-                slide_layout_index = 6  # Blank layout by default
+                slide_layout_index = 6  # 빈 레이아웃 (인덱스는 환경에 따라 다를 수 있음)
                 slide_layout = prs.slide_layouts[slide_layout_index]
                 slide = prs.slides.add_slide(slide_layout)
 
