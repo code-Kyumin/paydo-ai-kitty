@@ -1,0 +1,12 @@
+streamlit>=1.26.0
+python-pptx>=0.6.21
+python-docx>=0.8.11
+sentence-transformers>=2.2.2
+torch>=1.13.1
+transformers>=4.30.0
+scikit-learn>=1.0.2
+scipy>=1.7.3
+kss>=3.6.0
+gensim>=4.0.0
+requests
+numpy
