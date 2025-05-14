@@ -9,7 +9,7 @@ import re
 import textwrap
 import docx
 from sentence_transformers import SentenceTransformer, util
-import kss  # KSS 추가
+import kss
 from io import BytesIO
 import logging
 
@@ -283,8 +283,9 @@ font_size = st.sidebar.slider(
 # --- 폰트 크기 슬라이더 설정 끝 ---
 sim_threshold = st.sidebar.slider("문장 병합 유사도 기준 (낮을수록 많이 병합)", 0.5, 0.95, 0.75, step=0.05)
 
+paragraphs = []  # paragraphs 변수 초기화 [2025-05-12] 이 부분은 수정되지 않도록 해줘.
+
 if st.button("🚀 PPT 생성"):
-    paragraphs = []
     if uploaded_file:
         st.write(f"'{uploaded_file.name}' 파일 처리 중...")
         paragraphs = extract_text_from_word(uploaded_file)
@@ -303,7 +304,7 @@ if st.button("🚀 PPT 생성"):
     if paragraphs:
          logging.debug(f"첫 번째 문단 내용 (일부): {paragraphs[0][:100]}")
 
-with st.spinner("AI가 열심히 PPT를 만들고 있어요... 잠시만 기다려주세요! ☕️"):
+    with st.spinner("AI가 열심히 PPT를 만들고 있어요... 잠시만 기다려주세요! ☕️"):
         try:
             logging.info("Splitting text into slides...")
             slides_content, slide_flags = split_text_into_slides_with_similarity(paragraphs, max_lines, max_chars, model, sim_threshold)
@@ -312,7 +313,7 @@ with st.spinner("AI가 열심히 PPT를 만들고 있어요... 잠시만 기다�
                 st.error("슬라이드로 변환할 내용이 생성되지 않았습니다. 입력 텍스트나 분할 로직을 확인해주세요.")
                 st.stop()
 
-            logging.info(f"생성될 슬라이드 수: {len(slides_content)}")  # 수정: 괄호 닫음
+            logging.info(f"생성될 슬라이드 수: {len(slides_content)}")
             
             logging.info("Creating PPT...")
             ppt = create_ppt(slides_content, slide_flags, max_chars, font_size)
