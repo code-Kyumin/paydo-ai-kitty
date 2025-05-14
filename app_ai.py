@@ -187,11 +187,7 @@ def create_ppt(slides, split_flags, max_chars_per_line_in_ppt, font_size_pt):
     prs.slide_width = Inches(13.333)
     prs.slide_height = Inches(7.5)
 
-    # --- 폰트 이름 '맑은 고딕'으로 변경 ---
-    # Streamlit Cloud 환경에 '맑은 고딕'이 없을 경우, 기본 폰트로 대체될 수 있습니다.
-    font_name_to_use = '맑은 고딕'
-    # --- 폰트 이름 변경 끝 ---
-
+    font_name_to_use = '맑은 고딕' # Streamlit Cloud 환경에 없을 경우 기본 폰트로 대체될 수 있음
 
     for i, slide_text_content in enumerate(slides):
         try:
@@ -255,8 +251,27 @@ text_input = st.text_area("또는 텍스트 직접 입력 (문단은 빈 줄로 
 
 # 슬라이드 옵션 (기본값 및 범위 조정)
 st.sidebar.header("⚙️ 슬라이드 옵션")
-max_lines = st.sidebar.slider("슬라이드당 최대 줄 수 (예상)", 3, 15, 5)
-max_chars = st.sidebar.slider("한 줄당 최대 글자 수 (예상)", 20, 80, 35)
+
+# --- 슬라이드당 최대 줄 수 수정 ---
+max_lines = st.sidebar.slider(
+    "슬라이드당 최대 줄 수 (예상)",
+    min_value=1,   # 최소값을 1로 변경
+    max_value=10,  # 최대값을 10으로 변경
+    value=4,       # 기본값을 4로 변경
+    step=1
+)
+# --- 슬라이드당 최대 줄 수 수정 끝 ---
+
+# --- 한 줄당 최대 글자 수 수정 ---
+max_chars = st.sidebar.slider(
+    "한 줄당 최대 글자 수 (예상)",
+    min_value=3,   # 최소값을 3로 변경
+    max_value=30,  # 최대값을 30으로 변경
+    value=18,      # 기본값을 18로 변경
+    step=1
+)
+# --- 한 줄당 최대 글자 수 수정 끝 ---
+
 # --- 폰트 크기 슬라이더 설정 (기본값 54, 최대 65) ---
 font_size = st.sidebar.slider(
     "폰트 크기 (Pt)",
