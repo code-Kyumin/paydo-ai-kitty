@@ -1,4 +1,3 @@
-
 import streamlit as st
 from pptx import Presentation
 from pptx.util import Inches, Pt, Cm
@@ -100,30 +99,41 @@ def split_text_into_slides_with_similarity(paragraphs, max_lines, max_chars, mod
     if not merged_sentences:
         return [""], [False]
     embeddings = model.encode(merged_sentences)
+    split_flags = []  # 임의 분할 슬라이드 flagging
     for i, sentence in enumerate(merged_sentences):
         sentence_lines = calculate_text_lines(sentence, max_chars)
         if sentence_lines > max_lines:
             if current_text:
                 slides.append(current_text.strip())
-                current_text, current_lines = "", 0
+                current_lines = 0
+                split_flags.append(False) # 이전 슬라이드는 임의 분할 아님
             parts = textwrap.wrap(sentence, width=max_chars * max_lines)
             slides.extend(part.strip() for part in parts)
+            split_flags.extend([True] * len(parts)) # 임의 분할 슬라이드 flag
+            current_text, current_lines = "", 0 # 초기화
             continue
+
         similar = True
         if current_text and i > 0 and i < len(embeddings):
             sim = util.cos_sim(embeddings[i-1], embeddings[i])[0][0]
             if sim < threshold:
                 similar = False
+
+        # 수정된 부분: 현재 슬라이드 + 새 문장이 max_lines를 초과하는지 확인
         if current_lines + sentence_lines <= max_lines and similar:
             current_text = f"{current_text}\n{sentence}" if current_text else sentence
             current_lines += sentence_lines
         else:
             if current_text:
                 slides.append(current_text.strip())
+                split_flags.append(False) # 이전 슬라이드는 임의 분할 아님
             current_text, current_lines = sentence, sentence_lines
+        
     if current_text:
         slides.append(current_text.strip())
-    return slides, [False] * len(slides)
+        split_flags.append(False) # 마지막 슬라이드
+
+    return slides, split_flags
 
 def create_ppt(slides, flags, max_chars, font_size):
     prs = Presentation()
@@ -140,17 +150,42 @@ def create_ppt(slides, flags, max_chars, font_size):
             p.text = line
             p.font.size = Pt(font_size)
             p.font.bold = True
-            p.alignment = PP_ALIGN.LEFT
+            # 1. 텍스트 가운데 정렬
+            p.alignment = PP_ALIGN.CENTER
+
+        # 4. "확인 필요" 도형 및 슬라이드 번호 표시
         if flag:
             shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.2), Inches(0.2), Inches(1.5), Inches(0.3))
             shape.fill.solid()
             shape.fill.fore_color.rgb = RGBColor(255, 255, 0)
             tf = shape.text_frame
-            tf.text = "확인 필요"
+            tf.text = f"확인 필요 ({i+1}/{len(slides)})"
             tf.paragraphs[0].font.size = Pt(10)
             tf.paragraphs[0].font.bold = True
             tf.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
             tf.paragraphs[0].alignment = PP_ALIGN.CENTER
+        
+        # 5. 페이지 번호 표시
+        page_number_shape = slide.shapes.add_textbox(
+            Inches(prs.slide_width - 2), Inches(prs.slide_height - 0.5), Inches(1.5), Inches(0.3)
+        )
+        page_number_shape.text_frame.text = f"{i+1}/{len(slides)}"
+        page_number_shape.text_frame.paragraphs[0].font.size = Pt(10)
+        page_number_shape.text_frame.paragraphs[0].alignment = PP_ALIGN.RIGHT
+
+        # 6. 마지막 슬라이드에 "끝" 도형 추가
+        if i == len(slides) - 1:
+            end_shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE,
+                                              Inches(prs.slide_width - 2), Inches(prs.slide_height - 1),
+                                              Inches(1.5), Inches(0.3))
+            end_shape.fill.solid()
+            end_shape.fill.fore_color.rgb = RGBColor(0, 255, 0)
+            end_tf = end_shape.text_frame
+            end_tf.text = "끝"
+            end_tf.paragraphs[0].font.size = Pt(12)
+            end_tf.paragraphs[0].font.bold = True
+            end_tf.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
+            end_tf.paragraphs[0].alignment = PP_ALIGN.CENTER
     return prs
 
 # --- Streamlit UI ---
@@ -178,8 +213,10 @@ if st.button("✨ PPT 생성"):
             ppt_io.seek(0)
             st.download_button("📥 PPT 다운로드", ppt_io, "paydo_script_ai.pptx", mime="application/vnd.openxmlformats-officedocument.presentationml.presentation")
             st.success(f"총 {len(slides)}개의 슬라이드가 생성되었습니다.")
+            
+            # 4. UI에 임의 분할 슬라이드 정보 표시
             if any(flags):
-                flagged = [i+1 for i, f in enumerate(flags) if f]
-                st.warning(f"⚠️ 확인이 필요한 슬라이드: {flagged}")
+                flagged_indices = [i + 1 for i, flag in enumerate(flags) if flag]
+                st.warning(f"⚠️  {len(flagged_indices)}개의 슬라이드가 최대 줄 수를 초과하여 임의로 분할되었습니다. 확인이 필요한 슬라이드 번호: {flagged_indices}")
     else:
         st.info("Word 파일을 업로드하거나 텍스트를 입력하세요.")
