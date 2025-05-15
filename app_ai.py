@@ -1,15 +1,12 @@
 import streamlit as st
 from pptx import Presentation
-from pptx.util import Inches, Pt
+from pptx.util import Inches, Pt, Cm
 from pptx.enum.text import PP_ALIGN, MSO_VERTICAL_ANCHOR
 from pptx.dml.color import RGBColor
-from pptx.enum.shapes import MSO_SHAPE
+from pptx.enum.shapes import MSO_SHAPE, MSO_SHAPE_TYPE
 from pptx.enum.dml import MSO_THEME_COLOR_INDEX
 from pptx.enum.text import MSO_AUTO_SIZE
-from pptx.enum.slide import PP_SLIDE_LAYOUT  # Import slide layout enum
 from pptx.enum.enum import MSO_TRANSITION_TYPE  # Import transition type enum
-from pptx.enum.shapes import MSO_SHAPE_TYPE  # Import shape type enum
-from pptx.util import Cm
 
 import io
 import re
@@ -70,11 +67,9 @@ def smart_sentence_split(text):
         return sentences
     except Exception as e:
         logging.error(f"Error splitting sentences with KSS: {e}", exc_info=True)
-        # Fallback to a simpler split if KSS fails
         return [s.strip() for s in re.split(r'[.!?]\s+', text) if s.strip()]
 
 def is_incomplete(sentence):
-    """불완전한 문장 여부 확인"""
     sentence = sentence.strip()
     if not sentence:
         return False
@@ -89,7 +84,6 @@ def is_incomplete(sentence):
     return False
 
 def merge_sentences(sentences):
-    """불완전한 문장 병합"""
     merged = []
     buffer = ""
     for i, sentence in enumerate(sentences):
@@ -122,7 +116,6 @@ def merge_sentences(sentences):
 def split_text_into_slides_with_similarity(text_paragraphs, max_lines_per_slide, 
                                            max_chars_per_line_ppt, model, 
                                            similarity_threshold=0.85):
-    """의미 단위 및 문맥 유사도 기반 슬라이드 분할"""
     slides = []
     current_slide_text = ""
     current_slide_lines = 0
@@ -196,8 +189,6 @@ def split_text_into_slides_with_similarity(text_paragraphs, max_lines_per_slide,
 
 def create_ppt(slides_data, max_chars_per_line_in_ppt, font_size_pt,
                font_name_to_use, template_path=None, transition_type=None):
-    """PPT 생성 (템플릿, 전환 효과, 글꼴 설정)"""
-
     if template_path:
         try:
             prs = Presentation(template_path)
@@ -213,18 +204,17 @@ def create_ppt(slides_data, max_chars_per_line_in_ppt, font_size_pt,
     for i, slide_data in enumerate(slides_data):
         try:
             if template_path and len(prs.slides) > i:
-                slide = prs.slides[i]  # Use existing slide from template
+                slide = prs.slides[i]
             else:
-                slide_layout_index = 6  # 빈 레이아웃 (인덱스는 환경에 따라 다를 수 있음)
+                slide_layout_index = 6
                 slide_layout = prs.slide_layouts[slide_layout_index]
                 slide = prs.slides.add_slide(slide_layout)
 
-            # Clear existing content (shapes) on the slide
             for shape in list(slide.shapes):
                 slide.shapes.element.remove(shape.element)
 
             text_content = slide_data['text']
-            image_path = slide_data.get('image', None)  # Get image path from slide data
+            image_path = slide_data.get('image', None)
 
             if text_content:
                 add_text_to_slide(slide, text_content, font_size_pt, font_name_to_use, 
@@ -250,8 +240,6 @@ def create_ppt(slides_data, max_chars_per_line_in_ppt, font_size_pt,
     return prs
 
 def add_text_to_slide(slide, text, font_size_pt, font_name_to_use, max_chars_per_line):
-    """슬라이드에 텍스트 추가"""
-
     margin_horizontal = Inches(0.75)
     margin_vertical = Inches(0.75)
     left = margin_horizontal
@@ -286,32 +274,26 @@ def add_text_to_slide(slide, text, font_size_pt, font_name_to_use, max_chars_per
         p.alignment = PP_ALIGN.LEFT
 
 def add_image_to_slide(slide, image_path):
-    """슬라이드에 이미지 추가"""
-
     img = Image.open(image_path)
     img_width, img_height = img.size
 
     left = Inches(1)
     top = Inches(1)
-    width = Inches(5)  # 적절한 기본값
+    width = Inches(5)
     height = Inches(3)
 
     slide.shapes.add_picture(image_path, left, top, width=width, height=height)
 
 def set_slide_transition(slide, transition_type):
-    """슬라이드 전환 효과 설정"""
-
     try:
         transition = slide.transition
         transition.type = transition_type
-        transition.duration = 1  # Duration in seconds
+        transition.duration = 1
     except Exception as e:
         logging.error(f"Error setting transition: {e}", exc_info=True)
         st.warning(f"Transition effect '{transition_type}' could not be applied.")
 
 def add_check_needed_shape(slide):
-    """확인 필요 표시 추가"""
-
     shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.2), Inches(0.2), 
                                   Inches(1.5), Inches(0.3))
     shape.fill.solid()
