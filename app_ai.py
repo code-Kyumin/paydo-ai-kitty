@@ -102,13 +102,14 @@ def split_text_into_slides_with_similarity(paragraphs, max_lines, max_chars, mod
     split_flags = []  # 임의 분할 슬라이드 flagging
     for i, sentence in enumerate(merged_sentences):
         sentence_lines = calculate_text_lines(sentence, max_chars)
+        # 최대 줄 수를 절대 넘지 않도록 수정
         if sentence_lines > max_lines:
             if current_text:
                 slides.append(current_text.strip())
                 current_lines = 0
                 split_flags.append(False) # 이전 슬라이드는 임의 분할 아님
             parts = textwrap.wrap(sentence, width=max_chars * max_lines)
-            slides.extend(part.strip() for part in parts)
+            slides.extend(parts) # 텍스트만 추가 (줄 수 계산 X)
             split_flags.extend([True] * len(parts)) # 임의 분할 슬라이드 flag
             current_text, current_lines = "", 0 # 초기화
             continue
@@ -154,31 +155,31 @@ def create_ppt(slides, flags, max_chars, font_size):
             # 1. 텍스트 가운데 정렬
             p.alignment = PP_ALIGN.CENTER
 
-        # 4. "확인 필요" 도형 및 슬라이드 번호 표시
+        # 4. "확인 필요" 도형 (크기 확대, 슬라이드 번호 제거)
         if flag:
-            shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.2), Inches(0.2), Inches(1.5), Inches(0.3))
+            shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.2), Inches(0.2), Inches(2.0), Inches(0.5))  # 크기 확대
             shape.fill.solid()
-            shape.fill.fore_color.rgb = RGBColor(255, 255, 0) # 배경색 변경
+            shape.fill.fore_color.rgb = RGBColor(255, 255, 0) # 배경색 유지
             tf = shape.text_frame
-            tf.text = f"확인 필요 ({i+1}/{len(slides)})"
-            tf.paragraphs[0].font.size = Pt(10)
+            tf.text = "확인 필요" # 슬라이드 번호 제거
+            tf.paragraphs[0].font.size = Pt(12)
             tf.paragraphs[0].font.bold = True
-            tf.paragraphs[0].font.color.rgb = RGBColor(0, 0, 0) # 텍스트 색상 검정
+            tf.paragraphs[0].font.color.rgb = RGBColor(0, 0, 0)
             tf.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
             tf.paragraphs[0].alignment = PP_ALIGN.CENTER
         
-        # 5. 페이지 번호 표시 (좌측 상단으로 이동)
+        # 5. 페이지 번호 표시 (우측 하단으로 이동)
         page_number_shape = slide.shapes.add_textbox(
-            Inches(0.2), Inches(0.2), Inches(1.5), Inches(0.3)
+            Inches(prs.slide_width - 2), Inches(prs.slide_height - 0.5), Inches(1.5), Inches(0.3)
         )
         page_number_shape.text_frame.text = f"{i+1}/{len(slides)}"
         page_number_shape.text_frame.paragraphs[0].font.size = Pt(10)
-        page_number_shape.text_frame.paragraphs[0].alignment = PP_ALIGN.LEFT
+        page_number_shape.text_frame.paragraphs[0].alignment = PP_ALIGN.RIGHT
 
-        # 6. 마지막 슬라이드에 "끝" 도형 추가 (좌측 상단으로 이동, 크기 증가)
+        # 6. 마지막 슬라이드에 "끝" 도형 추가 (우측 하단으로 이동, 크기 증가)
         if i == len(slides) - 1:
             end_shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE,
-                                              Inches(0.2), Inches(0.6),
+                                              Inches(prs.slide_width - 2), Inches(prs.slide_height - 1),
                                               Inches(2), Inches(0.4)) # 위치 및 크기 조정
             end_shape.fill.solid()
             end_shape.fill.fore_color.rgb = RGBColor(0, 255, 0)
