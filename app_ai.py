@@ -140,55 +140,67 @@ def create_ppt(slides, flags, max_chars, font_size):
     prs = Presentation()
     prs.slide_width = Inches(13.333)
     prs.slide_height = Inches(7.5)
+    
+    # 레이아웃을 더 일반적인 것으로 변경 (예: 빈 레이아웃)
+    blank_slide_layout = prs.slide_layouts[6]  # [5] 또는 [6]을 상황에 맞게 선택
+    
     for i, (slide_text, flag) in enumerate(zip(slides, flags)):
-        slide = prs.slides.add_slide(prs.slide_layouts[6])
-        # 텍스트 박스 위치 상향 조정
-        textbox = slide.shapes.add_textbox(Inches(0.75), Inches(0.5), prs.slide_width - Inches(1.5), prs.slide_height - Inches(1.5))
-        text_frame = textbox.text_frame
-        text_frame.word_wrap = True
-        text_frame.vertical_anchor = MSO_VERTICAL_ANCHOR.TOP
-        for line in textwrap.wrap(slide_text, width=max_chars):
-            p = text_frame.add_paragraph()
-            p.text = line
-            p.font.size = Pt(font_size)
-            p.font.bold = True
-            # 1. 텍스트 가운데 정렬
-            p.alignment = PP_ALIGN.CENTER
+        try:
+            slide = prs.slides.add_slide(blank_slide_layout)
+            
+            # 텍스트 박스 위치 상향 조정
+            textbox = slide.shapes.add_textbox(Inches(0.75), Inches(0.5), prs.slide_width - Inches(1.5), prs.slide_height - Inches(1.5))
+            text_frame = textbox.text_frame
+            text_frame.word_wrap = True
+            text_frame.vertical_anchor = MSO_VERTICAL_ANCHOR.TOP
+            for line in textwrap.wrap(slide_text, width=max_chars):
+                p = text_frame.add_paragraph()
+                p.text = line
+                p.font.size = Pt(font_size)
+                p.font.bold = True
+                # 1. 텍스트 가운데 정렬
+                p.alignment = PP_ALIGN.CENTER
 
-        # 4. "확인 필요" 도형 (크기 확대, 텍스트 크기 확대)
-        if flag:
-            shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.2), Inches(0.2), Inches(2.0), Inches(0.5))  # 크기 확대
-            shape.fill.solid()
-            shape.fill.fore_color.rgb = RGBColor(255, 255, 0) # 배경색 유지
-            tf = shape.text_frame
-            tf.text = "확인 필요"
-            tf.paragraphs[0].font.size = Pt(16)  # 텍스트 크기 확대
-            tf.paragraphs[0].font.bold = True
-            tf.paragraphs[0].font.color.rgb = RGBColor(0, 0, 0)
-            tf.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
-            tf.paragraphs[0].alignment = PP_ALIGN.CENTER
-        
-        # 5. 페이지 번호 표시 (우측 하단으로 이동)
-        page_number_shape = slide.shapes.add_textbox(
-            Inches(prs.slide_width - 2), Inches(prs.slide_height - 0.5), Inches(1.5), Inches(0.3)
-        )
-        page_number_shape.text_frame.text = f"{i+1}/{len(slides)}"
-        page_number_shape.text_frame.paragraphs[0].font.size = Pt(10)
-        page_number_shape.text_frame.paragraphs[0].alignment = PP_ALIGN.RIGHT
+            # 4. "확인 필요" 도형 (크기 확대, 텍스트 크기 확대)
+            if flag:
+                shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.2), Inches(0.2), Inches(2.0), Inches(0.5))  # 크기 확대
+                shape.fill.solid()
+                shape.fill.fore_color.rgb = RGBColor(255, 255, 0) # 배경색 유지
+                tf = shape.text_frame
+                tf.text = "확인 필요"
+                tf.paragraphs[0].font.size = Pt(16)  # 텍스트 크기 확대
+                tf.paragraphs[0].font.bold = True
+                tf.paragraphs[0].font.color.rgb = RGBColor(0, 0, 0)
+                tf.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
+                tf.paragraphs[0].alignment = PP_ALIGN.CENTER
+            
+            # 5. 페이지 번호 표시 (우측 하단으로 이동)
+            page_number_shape = slide.shapes.add_textbox(
+                Inches(prs.slide_width - 2), Inches(prs.slide_height - 0.5), Inches(1.5), Inches(0.3)
+            )
+            page_number_shape.text_frame.text = f"{i+1}/{len(slides)}"
+            page_number_shape.text_frame.paragraphs[0].font.size = Pt(10)
+            page_number_shape.text_frame.paragraphs[0].alignment = PP_ALIGN.RIGHT
 
-        # 6. 마지막 슬라이드에 "끝" 도형 추가 (우측 하단으로 이동, 크기 증가)
-        if i == len(slides) - 1:
-            end_shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE,
-                                              Inches(prs.slide_width - 2), Inches(prs.slide_height - 1),
-                                              Inches(2), Inches(0.4)) # 위치 및 크기 조정
-            end_shape.fill.solid()
-            end_shape.fill.fore_color.rgb = RGBColor(0, 255, 0)
-            end_tf = end_shape.text_frame
-            end_tf.text = "끝"
-            end_tf.paragraphs[0].font.size = Pt(14) # 폰트 크기 증가
-            end_tf.paragraphs[0].font.bold = True
-            end_tf.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
-            end_tf.paragraphs[0].alignment = PP_ALIGN.CENTER
+            # 6. 마지막 슬라이드에 "끝" 도형 추가 (우측 하단으로 이동, 크기 증가)
+            if i == len(slides) - 1:
+                end_shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE,
+                                                  Inches(prs.slide_width - 2), Inches(prs.slide_height - 1),
+                                                  Inches(2), Inches(0.4)) # 위치 및 크기 조정
+                end_shape.fill.solid()
+                end_shape.fill.fore_color.rgb = RGBColor(0, 255, 0)
+                end_tf = end_shape.text_frame
+                end_tf.text = "끝"
+                end_tf.paragraphs[0].font.size = Pt(14) # 폰트 크기 증가
+                end_tf.paragraphs[0].font.bold = True
+                end_tf.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
+                end_tf.paragraphs[0].alignment = PP_ALIGN.CENTER
+                
+        except Exception as e:
+            logging.error(f"슬라이드 생성 중 오류 발생: {e}")
+            # 오류 발생 시 슬라이드를 건너뛰거나, 오류 메시지를 표시하는 등의 처리
+            continue  
+            
     return prs
 
 # --- Streamlit UI ---
