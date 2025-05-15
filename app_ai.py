@@ -155,14 +155,14 @@ def create_ppt(slides, flags, max_chars, font_size):
             # 1. 텍스트 가운데 정렬
             p.alignment = PP_ALIGN.CENTER
 
-        # 4. "확인 필요" 도형 (크기 확대, 슬라이드 번호 제거)
+        # 4. "확인 필요" 도형 (크기 확대, 텍스트 크기 확대)
         if flag:
             shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.2), Inches(0.2), Inches(2.0), Inches(0.5))  # 크기 확대
             shape.fill.solid()
             shape.fill.fore_color.rgb = RGBColor(255, 255, 0) # 배경색 유지
             tf = shape.text_frame
-            tf.text = "확인 필요" # 슬라이드 번호 제거
-            tf.paragraphs[0].font.size = Pt(12)
+            tf.text = "확인 필요"
+            tf.paragraphs[0].font.size = Pt(16)  # 텍스트 크기 확대
             tf.paragraphs[0].font.bold = True
             tf.paragraphs[0].font.color.rgb = RGBColor(0, 0, 0)
             tf.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
@@ -174,7 +174,7 @@ def create_ppt(slides, flags, max_chars, font_size):
         )
         page_number_shape.text_frame.text = f"{i+1}/{len(slides)}"
         page_number_shape.text_frame.paragraphs[0].font.size = Pt(10)
-        page_number_shape.text_frame.paragraphs[0].alignment = PP_ALIGN.RIGHT
+        page_number_shape.text_frame.paragraphs[0].font.alignment = PP_ALIGN.RIGHT
 
         # 6. 마지막 슬라이드에 "끝" 도형 추가 (우측 하단으로 이동, 크기 증가)
         if i == len(slides) - 1:
@@ -188,7 +188,7 @@ def create_ppt(slides, flags, max_chars, font_size):
             end_tf.paragraphs[0].font.size = Pt(14) # 폰트 크기 증가
             end_tf.paragraphs[0].font.bold = True
             end_tf.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
-            end_tf.paragraphs[0].alignment = PP_ALIGN.CENTER
+            end_tf.paragraphs[0].font.alignment = PP_ALIGN.CENTER
     return prs
 
 # --- Streamlit UI ---
