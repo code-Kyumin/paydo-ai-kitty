@@ -174,7 +174,7 @@ def create_ppt(slides, flags, max_chars, font_size):
         )
         page_number_shape.text_frame.text = f"{i+1}/{len(slides)}"
         page_number_shape.text_frame.paragraphs[0].font.size = Pt(10)
-        page_number_shape.text_frame.paragraphs[0].font.alignment = PP_ALIGN.RIGHT
+        page_number_shape.text_frame.paragraphs[0].alignment = PP_ALIGN.RIGHT
 
         # 6. 마지막 슬라이드에 "끝" 도형 추가 (우측 하단으로 이동, 크기 증가)
         if i == len(slides) - 1:
@@ -188,7 +188,7 @@ def create_ppt(slides, flags, max_chars, font_size):
             end_tf.paragraphs[0].font.size = Pt(14) # 폰트 크기 증가
             end_tf.paragraphs[0].font.bold = True
             end_tf.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
-            end_tf.paragraphs[0].font.alignment = PP_ALIGN.CENTER
+            end_tf.paragraphs[0].alignment = PP_ALIGN.CENTER
     return prs
 
 # --- Streamlit UI ---
