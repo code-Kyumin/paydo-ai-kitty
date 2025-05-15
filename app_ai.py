@@ -6,7 +6,6 @@ from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE, MSO_SHAPE_TYPE
 # from pptx.enum.dml import MSO_THEME_COLOR_INDEX # MSO_THEME_COLOR_INDEX는 사용되지 않아 주석 처리
 # from pptx.enum.text import MSO_AUTO_SIZE # MSO_AUTO_SIZE는 사용되지 않아 주석 처리
-app_ai
 
 
 def split_text_into_slides_with_similarity(paragraphs, max_lines, max_chars, model, threshold=0.85, progress_callback=None):
