@@ -7,10 +7,6 @@ try:
 except RuntimeError:
     asyncio.set_event_loop(asyncio.new_event_loop())
 
-# 🧩 PyTorch 내부 torch._classes 오류 회피
-# import types
-# sys.modules['torch._classes'] = types.SimpleNamespace()
-
 import streamlit as st
 from pptx import Presentation
 from pptx.util import Inches, Pt
