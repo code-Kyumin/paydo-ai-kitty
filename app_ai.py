@@ -270,7 +270,8 @@ def create_presentation_from_slides(slides_data, slide_flags, chars_per_line, te
     blank_slide_layout = prs.slide_layouts[6] # 내용 없는 레이아웃 사용
 
     total_slides_to_create = len(slides_data)
-    for i, (slide_content, is_ flagged_for_review) in enumerate(zip(slides_data, slide_flags)):
+    # 아래 라인의 변수명에서 공백을 제거합니다.
+    for i, (slide_content, is_flagged_for_review) in enumerate(zip(slides_data, slide_flags)): # <--- 수정됨
         progress_callback_func(0.8 + (0.2 * (i / total_slides_to_create)), f"슬라이드 {i+1}/{total_slides_to_create} 생성 중...")
         
         slide = prs.slides.add_slide(blank_slide_layout)
@@ -295,7 +296,7 @@ def create_presentation_from_slides(slides_data, slide_flags, chars_per_line, te
             p.alignment = PP_ALIGN.CENTER
 
         # "확인 필요" 도형 (요구사항 2)
-        if is_flagged_for_review:
+        if is_flagged_for_review: # <--- 여기 변수명도 동일하게 수정됨
             flag_shape_width, flag_shape_height = Inches(2.2), Inches(0.6)
             flag_shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.2), Inches(0.2), flag_shape_width, flag_shape_height)
             flag_shape.fill.solid()
