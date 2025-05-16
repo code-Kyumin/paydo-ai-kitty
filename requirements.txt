@@ -1,8 +1,8 @@
 streamlit>=1.30.0,<2.0.0  # Streamlit 최신 안정 버전 범위
-torch==2.7.0 # 현재 pip list에 있는 버전 기준, 또는 PyTorch 공식 CUDA 호환 최신 버전 명시
-# torchvision  # torch와 버전을 맞춰서 명시적으로 설치 권장 (예: torchvision==0.18.0)
-# torchaudio   # torch와 버전을 맞춰서 명시적으로 설치 권장 (예: torchaudio==2.3.0)
-sentence-transformers>=2.7.0,<3.0.0 # torch 2.7.0과 호환되는 최신 버전
+torch==2.1.2 # 현재 pip list에 있는 버전 기준, 또는 PyTorch 공식 CUDA 호환 최신 버전 명시
+# torchvision==0.16.2  # torch와 버전을 맞춰서 명시적으로 설치 권장
+# torchaudio==2.1.2   # torch와 버전을 맞춰서 명시적으로 설치 권장
+sentence-transformers>=2.7.0,<3.0.0 # torch 2.1.2과 호환되는 최신 버전
 transformers>=4.38.0,<5.0.0     # sentence-transformers 최신 버전과 호환
 kss>=4.5.4,<6.0.0                # kss 최신 안정 버전
 python-docx==0.8.11
@@ -10,6 +10,3 @@ python-pptx==0.6.21              # 안정적인 버전 명시 (또는 1.0.2 사�
 numpy>=1.26.0                    # 최신 torch 및 transformers 호환
 scipy>=1.11.0                    # 최신 torch 및 transformers 호환
 Pillow>=10.0.0                   # torchvision 등에서 요구할 수 있는 최신 버전
-# textwrap3는 표준 textwrap 사용하므로 제거
-# PyYAML은 직접 사용되지 않으므로 제거 (필요시 특정 의존성으로 추가)
-logging # 표준 라이브러리이므로 명시적 설치 불필요
