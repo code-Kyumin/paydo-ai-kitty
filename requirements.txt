@@ -2,8 +2,8 @@
 streamlit>=1.25.0,<1.31
 
 # NLP & Embeddings
+torch>=2.0.0,<2.8  # Python 3.12 호환 가능한 torch 범위로 제한
 sentence-transformers==2.2.2
-torch>=1.13.1,<2.2
 transformers==4.30.2
 kss==3.5.6
 

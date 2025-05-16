@@ -1,14 +1,16 @@
 import sys
 import asyncio
 
-# PyTorch 오류 우회 처리
-sys.modules['torch._classes'] = None
-
-# Streamlit + Python 3.12 환경에서 event loop 오류 방지
+# 🧩 Python 3.12에서 Streamlit event loop 오류 우회
 try:
     asyncio.get_running_loop()
 except RuntimeError:
     asyncio.set_event_loop(asyncio.new_event_loop())
+
+# 🧩 PyTorch 내부 torch._classes 오류 회피
+import types
+sys.modules['torch._classes'] = types.SimpleNamespace()
+
 import streamlit as st
 from pptx import Presentation
 from pptx.util import Inches, Pt
