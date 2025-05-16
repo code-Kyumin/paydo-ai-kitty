@@ -44,15 +44,30 @@ def load_model():
 model = load_model()
 
 # Word 문서에서 텍스트 추출
+from docx import Document
+from docx.opc.exceptions import PackageNotFoundError
+
 def extract_text_from_word(uploaded_file):
     try:
+        # 파일 포인터를 처음으로 되돌림
+        uploaded_file.seek(0)
+
+        # 바이트 스트림으로 읽기
         file_bytes = BytesIO(uploaded_file.read())
-        doc = docx.Document(file_bytes)
+
+        # docx 문서 로딩
+        doc = Document(file_bytes)
         paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
         return paragraphs
-    except Exception as e:
-        st.error(f"Word 파일 처리 오류: {e}")
+
+    except PackageNotFoundError:
+        st.error("❌ 이 파일은 .docx 형식이 아닙니다. .docx 파일만 업로드해 주세요.")
         return []
+
+    except Exception as e:
+        st.error(f"❌ Word 파일 처리 중 오류가 발생했습니다: {e}")
+        return []
+
 
 # 텍스트 줄 수 계산
 def calculate_text_lines(text, max_chars_per_line):
