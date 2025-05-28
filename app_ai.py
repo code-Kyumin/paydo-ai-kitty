@@ -35,7 +35,7 @@ custom_css = """
 
     /* Streamlit 메인 컨테이너 폭 조절 및 그림자, 모서리 둥글게 */
     [data-testid="stAppViewContainer"] {
-        max-width: 800px; /* 컨테이너 최대 너비 */
+        max-width: 900px; /* 컨테이너 최대 너비 증가 */
         margin: auto; /* 페이지 중앙 정렬 */
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* 그림자 효과 */
         border-radius: 8px; /* 모서리 둥글게 */
@@ -71,7 +71,7 @@ custom_css = """
     .top-design-bar h1 {
         color: #fff; /* 제목 텍스트 색상 흰색 */
         margin: 0;
-        font-size: 1.0em; /* 제목 글자 크기 조정 (더 작게) */
+        font-size: 0.7em; /* 제목 글자 크기 조정 (더 작게 0.7em) */
         font-weight: 700;
         text-align: center; /* 가운데 정렬 */
         display: flex; /* flexbox 사용 (이모지와 텍스트 정렬) */
@@ -96,6 +96,10 @@ custom_css = """
         position: sticky; /* 스크롤 시 하단에 고정 */
         bottom: 0; /* 하단에 붙임 */
         z-index: 999;
+        /* 버튼을 가운데 정렬하기 위한 flexbox 속성 추가 */
+        display: flex; 
+        justify-content: center; 
+        align-items: center;
     }
     
     /* 대본 입력 방식 선택 섹션 */
@@ -196,10 +200,6 @@ custom_css = """
         padding: 10px 15px;
         outline: none;
     }
-    .stExpander > div > div > details > summary:hover {
-        background-color: #f0f0f0;
-        border-radius: 8px;
-    }
     .stExpander > div > div > details > summary::marker {
         content: '';
     }
@@ -220,7 +220,7 @@ custom_css = """
     }
 
     /* PPT 자동 생성 시작 버튼 (하단 바 내에 포함) */
-    .bottom-design-bar .stButton > button { /* 클래스 이름을 'bottom-bar'에서 'bottom-design-bar'로 변경 */
+    .bottom-design-bar .stButton > button { 
         background-color: orangered; /* 눈에 띄는 색상 (오렌지-레드) */
         color: white;
         border: none;
@@ -229,8 +229,9 @@ custom_css = """
         cursor: pointer;
         font-size: 1.3em; /* 폰트 크기 키우기 */
         font-weight: 700;
-        width: calc(100% - 40px); /* 부모 div의 좌우 패딩을 고려하여 너비 조정 (20px * 2) */
-        margin: 0px auto; /* 상단 간격은 부모 padding으로 확보, 좌우 auto로 가운데 정렬 */
+        width: 100%; /* 부모 flex 컨테이너 내에서 100% 너비 */
+        max-width: 400px; /* 최대 너비 제한 (너무 길어지는 것을 방지) */
+        /* margin: 0px auto; 를 제거하고 flexbox의 justify-content로 가운데 정렬 */
         display: flex; /* flexbox 사용 */
         align-items: center;
         justify-content: center;
@@ -288,7 +289,7 @@ custom_css = """
         }
         .bottom-design-bar .stButton > button {
              width: calc(100% - 40px); /* 모바일에서도 패딩 고려하여 너비 조정 */
-             margin: 0px auto; /* 좌우 마진 제거 */
+             max-width: none; /* 모바일에서는 최대 너비 제한 해제 */
         }
     }
 </style>
