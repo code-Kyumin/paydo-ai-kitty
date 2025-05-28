@@ -76,11 +76,22 @@ st.markdown("""
         padding-bottom: 0.5rem;
     }
 
+    /* 메인 핵심 영역 프레임 스타일 */
+    .main-interaction-frame {
+        background-color: #ffffff;
+        padding: 2rem; /* 내부 여백 증가 */
+        border: 1px solid #ddd;
+        border-radius: 0.75rem; /* 모서리 둥글게 */
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1); /* 그림자 강화 */
+        margin-bottom: 2rem; /* 하단 여백 추가 */
+    }
+
 </style>
 """, unsafe_allow_html=True)
 
 # 제목
 st.markdown('<h1 class="title-style">🎬 촬영 대본 PPT 자동 생성 AI (KoSimCSE)</h1>', unsafe_allow_html=True)
+
 
 # 모델 로딩
 @st.cache_resource
@@ -88,12 +99,13 @@ def load_model():
     return SentenceTransformer("jhgan/ko-sbert-nli")
 model = load_model()
 
-# 메인 콘텐츠 영역 (업로드, 텍스트 입력, PPT 생성 버튼)
+# 메인 콘텐츠 영역 (하나의 큰 테두리 안에 모두 포함)
 st.markdown("""
-    <div style="background-color: #ffffff; padding: 1.5rem; border: 1px solid #ddd; border-radius: 0.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 8px rgba(0,0,0,0.05);">
-        <h3 style="margin-top: 0; margin-bottom: 1rem; color: #333;">📤 대본 입력 방식 선택</h3>
+    <div class="main-interaction-frame">
+        <h3 style="margin-top: 0; margin-bottom: 1.5rem; color: #333; text-align: center;">🚀 PPT 대본 생성 시작</h3>
 """, unsafe_allow_html=True)
 
+# 대본 입력 방식 선택 (탭 UI)
 tab1, tab2 = st.tabs(["📄 Word 파일 업로드", "✍️ 텍스트 직접 입력"])
 
 with tab1:
@@ -104,9 +116,47 @@ with tab1:
 with tab2:
     text_input = st.text_area("여기에 촬영 대본 텍스트를 직접 작성하세요:", height=300, label_visibility="collapsed")
 
+# PPT 자동 생성 버튼
+st.markdown("<div style='text-align:center; margin-top:2rem'>", unsafe_allow_html=True)
+if st.button("🚀 PPT 자동 생성 시작", use_container_width=True):
+    paragraphs = []
+    if uploaded_file:
+        try:
+            paragraphs = extract_text_from_word(uploaded_file)
+        except Exception:
+            st.error("❌ Word 파일을 처리하는 중 오류가 발생했습니다.\n\n📌 **파일명을 영문으로 변경한 뒤 다시 업로드해 주세요.**")
+            st.stop()
+    elif text_input.strip():
+        paragraphs = [p.strip() for p in text_input.split("\n\n") if p.strip()]
+    else:
+        st.warning("📎 Word 파일을 업로드하거나 텍스트를 입력해 주세요.")
+        st.stop()
+
+    if not paragraphs:
+        st.error("❗ 유효한 텍스트가 없습니다.")
+        st.stop()
+
+    with st.spinner("🛠️ PPT 생성 중입니다..."):
+        slides, flags = split_text_into_slides_with_similarity(
+            paragraphs, max_lines, max_chars, model, similarity_threshold=sim_threshold
+        )
+        ppt = create_ppt(slides, flags, max_chars, font_size)
+
+        if ppt:
+            ppt_io = io.BytesIO()
+            ppt.save(ppt_io)
+            ppt_io.seek(0)
+            st.download_button("📥 PPT 다운로드", ppt_io, "paydo_script_ai.pptx",
+                               mime="application/vnd.openxmlformats-officedocument.presentationml.presentation")
+            st.success(f"✅ 총 {len(slides)}개의 슬라이드가 생성되었습니다.")
+            if any(flags):
+                flagged = [i+1 for i, f in enumerate(flags) if f]
+                st.warning(f"⚠️ 확인이 필요한 슬라이드 번호: {flagged}")
 st.markdown("</div>", unsafe_allow_html=True)
 
-# 사이드바 슬라이드 설정
+st.markdown("</div>", unsafe_allow_html=True) # 메인 프레임 닫기
+
+# 사이드바 슬라이드 설정 (기존과 동일)
 st.sidebar.markdown("#### ⚙️ 슬라이드 설정")
 with st.sidebar.expander("💡 슬라이드 설정 안내"):
     st.info("이곳에서 슬라이드당 최대 줄 수, 한 줄당 최대 글자 수, 폰트 크기, 문맥 유사도 기준 등 PPT 생성의 세부 조건을 조정할 수 있습니다.")
@@ -116,8 +166,8 @@ max_chars = st.sidebar.slider("🔠 한 줄당 최대 글자 수", 10, 100, 18)
 font_size = st.sidebar.slider("🔡 폰트 크기", 10, 60, 54)
 sim_threshold = st.sidebar.slider("🧠 문맥 유사도 기준", 0.0, 1.0, 0.85, step=0.05)
 
-# 이하 함수 및 실행 로직은 동일하게 유지
 
+# 이하 함수는 변경 없음 (생략)
 def extract_text_from_word(uploaded_file):
     try:
         file_bytes = BytesIO(uploaded_file.read())
@@ -268,41 +318,3 @@ def add_end_mark(slide):
     p.font.color.rgb = RGBColor(255, 255, 255)
     shape.text_frame.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
     p.alignment = PP_ALIGN.CENTER
-
-# 실행 버튼
-st.markdown("<div style='text-align:center; margin-top:1.5rem'>", unsafe_allow_html=True)
-if st.button("🚀 PPT 자동 생성 시작", use_container_width=True):
-    paragraphs = []
-    if uploaded_file:
-        try:
-            paragraphs = extract_text_from_word(uploaded_file)
-        except Exception:
-            st.error("❌ Word 파일을 처리하는 중 오류가 발생했습니다.\n\n📌 **파일명을 영문으로 변경한 뒤 다시 업로드해 주세요.**")
-            st.stop()
-    elif text_input.strip():
-        paragraphs = [p.strip() for p in text_input.split("\n\n") if p.strip()]
-    else:
-        st.warning("📎 Word 파일을 업로드하거나 텍스트를 입력해 주세요.")
-        st.stop()
-
-    if not paragraphs:
-        st.error("❗ 유효한 텍스트가 없습니다.")
-        st.stop()
-
-    with st.spinner("🛠️ PPT 생성 중입니다..."):
-        slides, flags = split_text_into_slides_with_similarity(
-            paragraphs, max_lines, max_chars, model, similarity_threshold=sim_threshold
-        )
-        ppt = create_ppt(slides, flags, max_chars, font_size)
-
-        if ppt:
-            ppt_io = io.BytesIO()
-            ppt.save(ppt_io)
-            ppt_io.seek(0)
-            st.download_button("📥 PPT 다운로드", ppt_io, "paydo_script_ai.pptx",
-                               mime="application/vnd.openxmlformats-officedocument.presentationml.presentation")
-            st.success(f"✅ 총 {len(slides)}개의 슬라이드가 생성되었습니다.")
-            if any(flags):
-                flagged = [i+1 for i, f in enumerate(flags) if f]
-                st.warning(f"⚠️ 확인이 필요한 슬라이드 번호: {flagged}")
-st.markdown("</div>", unsafe_allow_html=True)
