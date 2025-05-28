@@ -224,9 +224,9 @@ custom_css = """
         color: #777;
     }
 
-    /* PPT 자동 생성 시작 버튼의 실제 button 태그 직접 타겟팅 */
-    .bottom-fixed-bar .stButton > button { /* 새로 만든 고정 바 안에 있는 stButton 안의 실제 button */
-        background-color: orangered; /* 눈에 띄는 색상 (오렌지-레드) */
+/* PPT 자동 생성 시작 버튼 */
+    .stButton > button {
+        background-color: #2ecc71; /* 초록색 */
         color: white;
         border: none;
         padding: 12px 25px; /* 패딩 증가로 버튼 크기 키우기 */
@@ -238,13 +238,16 @@ custom_css = """
         max-width: 400px; /* 최대 너비 제한 (너무 길어지는 것을 방지) */
         display: block; /* 블록 레벨 요소로 변경 */
         margin: 0 auto; /* 좌우 마진을 자동으로 설정하여 중앙 정렬 */
-        align-items: center; /* (display: block으로 인해 이 속성은 효과 없음) */
-        justify-content: center; /* (display: block으로 인해 이 속성은 효과 없음) */
-        gap: 10px; /* (display: block으로 인해 이 속성은 효과 없음) */
+        /* 아래 display: flex 관련 속성들은 display: block으로 인해 효과가 없지만, 
+           내부 아이콘-텍스트 정렬을 위해 유지 */
+        display: flex; /* 내부 아이콘과 텍스트 정렬을 위해 flexbox 유지 */
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
         transition: background-color 0.3s ease;
     }
-    .bottom-fixed-bar .stButton > button:hover {
-        background-color: #CC4000; /* 호버 색상 */
+    .stButton > button:hover {
+        background-color: #27ae60; /* 호버 시 더 어두운 초록색 */
     }
 
     /* 사이드바 스타일 */
