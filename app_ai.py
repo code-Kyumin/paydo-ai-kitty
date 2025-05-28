@@ -1,14 +1,30 @@
+# Paydo AI PPT 생성기 with KoSimCSE 적용 및 오류 수정
+
 import streamlit as st
+from pptx import Presentation
+from pptx.util import Inches, Pt
+from pptx.enum.text import PP_ALIGN, MSO_VERTICAL_ANCHOR
+from pptx.dml.color import RGBColor
+from pptx.enum.shapes import MSO_SHAPE
+import io
+import re
+import textwrap
+import docx
+from io import BytesIO
+from sentence_transformers import SentenceTransformer, util
+
+# Streamlit 세팅
+st.set_page_config(page_title="Paydo AI PPT", layout="centered")
 
 # CSS 스타일 정의
-# Streamlit 앱에 사용자 정의 CSS를 주입하여 디자인을 커스터마이징합니다.
-# Streamlit의 내부 DOM 구조에 의존하는 부분이 있으므로, Streamlit 버전 업데이트 시
-# 일부 CSS 셀렉터는 변경될 수 있음을 유의해주세요.
 custom_css = """
 <style>
     /* 기본 폰트 설정 (Google Noto Sans KR 폰트 임포트) */
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
     
+    /* Font Awesome 아이콘 라이브러리 임포트 (파일 업로더 아이콘용) */
+    @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+
     /* Streamlit 앱의 전체적인 배경 및 폰트 설정 */
     html, body, [data-testid="stAppViewContainer"] {
         font-family: 'Noto Sans KR', sans-serif;
@@ -29,7 +45,6 @@ custom_css = """
     }
 
     /* 상단 디자인 BAR 스타일 */
-    /* Streamlit의 st.container를 사용하여 디자인 바를 만듭니다. */
     .top-design-bar {
         background-color: #2c3e50; /* 어두운 파란색/회색 */
         color: #fff;
@@ -38,16 +53,19 @@ custom_css = """
         border-top-left-radius: 8px;
         border-top-right-radius: 8px;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        /* 고정(sticky) 기능은 제거하고 디자인적인 분리만 강조 */
-        margin-left: -1rem; /* Streamlit 기본 좌우 마진 상쇄 */
-        margin-right: -1rem; /* Streamlit 기본 좌우 마진 상쇄 */
-        width: calc(100% + 2rem); /* Streamlit 기본 좌우 마진 상쇄 */
+        margin-left: -1rem; 
+        margin-right: -1rem;
+        width: calc(100% + 2rem);
     }
     .top-design-bar h1 {
         color: #fff; /* 제목 텍스트 색상 흰색 */
         margin: 0;
         font-size: 1.5em;
         font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px; /* 이모지와 텍스트 사이 간격 */
     }
 
     /* 하단 디자인 BAR 스타일 */
@@ -59,10 +77,9 @@ custom_css = """
         border-bottom-left-radius: 8px;
         border-bottom-right-radius: 8px;
         box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
-        /* 고정(sticky) 기능은 제거하고 디자인적인 분리만 강조 */
-        margin-left: -1rem; /* Streamlit 기본 좌우 마진 상쇄 */
-        margin-right: -1rem; /* Streamlit 기본 좌우 마진 상쇄 */
-        width: calc(100% + 2rem); /* Streamlit 기본 좌우 마진 상쇄 */
+        margin-left: -1rem;
+        margin-right: -1rem;
+        width: calc(100% + 2rem);
     }
     
     /* 대본 입력 방식 선택 섹션 */
@@ -72,16 +89,16 @@ custom_css = """
         border-radius: 8px;
         margin-bottom: 20px;
         text-align: center;
-        display: flex; /* Flexbox를 사용하여 아이콘과 텍스트 정렬 */
-        justify-content: center; /* 가로 중앙 정렬 */
-        align-items: center; /* 세로 중앙 정렬 */
-        gap: 8px; /* 아이콘과 텍스트 사이 간격 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
         font-weight: 700;
-        color: #2c3e50; /* 텍스트 색상 */
-        font-size: 1.1em; /* 요청하신 크기 조절 (더 작게) */
+        color: #2c3e50;
+        font-size: 1.1em;
     }
     .input-method-selection-box .icon {
-        font-size: 1.2em; /* 아이콘 크기 조절 */
+        font-size: 1.2em;
     }
 
     /* Streamlit 탭 위젯 커스터마이징 */
@@ -97,7 +114,6 @@ custom_css = """
         font-weight: 500;
         color: #555;
     }
-    /* 활성화된 탭 스타일 */
     .stTabs [aria-selected="true"] { 
         border-bottom: 2px solid #3498db !important; 
         color: #3498db !important; 
@@ -121,7 +137,7 @@ custom_css = """
         align-items: center;
         position: relative; /* 자식 요소 절대 위치 지정을 위해 */
     }
-    /* Streamlit 파일 업로더의 기본 텍스트와 아이콘 숨기기 */
+    /* 파일 업로더의 기본 텍스트와 아이콘 숨기기 */
     [data-testid="stFileUploaderDropzoneInstructions"] > div > span {
         display: none; 
     }
@@ -129,7 +145,7 @@ custom_css = """
         display: none; 
     }
     [data-testid="stFileUploaderDropzoneInstructions"] {
-        display: none; /* 드롭존 지시사항 전체 숨기기 */
+        display: none; 
     }
     
     /* Browse files 버튼 스타일 조정 */
@@ -151,7 +167,7 @@ custom_css = """
         background-color: #2980b9;
     }
 
-    /* Expander (Word 파일 업로드 시 문제가 발생하나요?) */
+    /* 문제 해결 Expander (st.expander) 스타일 */
     .stExpander {
         border: 1px solid #eee;
         border-radius: 8px;
@@ -208,13 +224,26 @@ custom_css = """
         background-color: #27ae60;
     }
 
+    /* 사이드바 스타일 (기본 Streamlit 사이드바) */
+    [data-testid="stSidebar"] {
+        background-color: #e7eff6; /* 사이드바 배경색 */
+        border-right: 1px solid #ddd;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+    }
+    [data-testid="stSidebar"] .stButton > button {
+        background-color: #3498db; /* 사이드바 버튼 색상 */
+    }
+    [data-testid="stSidebar"] .stButton > button:hover {
+        background-color: #2980b9;
+    }
+
     /* 반응형 디자인 */
     @media (max-width: 768px) {
         [data-testid="stAppViewContainer"] {
             border-radius: 0;
             box-shadow: none;
         }
-        .top-design-bar, .bottom-design-bar { /* 변경된 클래스 이름 사용 */
+        .top-design-bar, .bottom-design-bar {
             border-radius: 0;
         }
     }
@@ -224,17 +253,183 @@ custom_css = """
 # Streamlit 앱에 사용자 정의 CSS 주입
 st.markdown(custom_css, unsafe_allow_html=True)
 
+# 모델 로딩 (한 번만)
+@st.cache_resource
+def load_model():
+    return SentenceTransformer("jhgan/ko-sbert-nli")
+
+model = load_model()
+
+# Word 파일 텍스트 추출
+def extract_text_from_word(uploaded_file):
+    try:
+        file_bytes = BytesIO(uploaded_file.read())
+        doc = docx.Document(file_bytes)
+        return [p.text for p in doc.paragraphs if p.text.strip()]
+    except Exception as e:
+        st.error(f"Word 파일 처리 오류: {e}")
+        return None
+
+# 텍스트 줄 수 계산
+def calculate_text_lines(text, max_chars_per_line):
+    lines = 0
+    paragraphs = text.split('\n')
+    for paragraph in paragraphs:
+        if not paragraph:
+            lines += 1
+        else:
+            lines += len(textwrap.wrap(paragraph, width=max_chars_per_line, break_long_words=True))
+    return lines
+
+# 문장 분할
+def smart_sentence_split(text):
+    paragraphs = text.split('\n')
+    sentences = []
+    for paragraph in paragraphs:
+        # 서술어 단독 분리 방지를 위해 문장 끝 마침표 기준이 아닌, 약간 넓게 split
+        temp_sentences = re.split(r'(?<=[^\d][.!?])\s+(?=[\"\'\uAC00-\uD7A3])', paragraph)
+        sentences.extend([s.strip() for s in temp_sentences if s.strip()])
+    return sentences
+
+# 슬라이드 분할 with 유사도 + 짧은 문장 병합 개선
+def split_text_into_slides_with_similarity(text_paragraphs, max_lines_per_slide, max_chars_per_line_ppt, model, similarity_threshold=0.85):
+    slides, split_flags, slide_number = [], [], 1
+    current_text, current_lines, needs_check = "", 0, False
+
+    for paragraph in text_paragraphs:
+        sentences = smart_sentence_split(paragraph)
+        if not sentences:
+            continue
+
+        embeddings = model.encode(sentences)
+
+        i = 0
+        while i < len(sentences):
+            sentence = sentences[i]
+            sentence_lines = calculate_text_lines(sentence, max_chars_per_line_ppt)
+
+            # 다음 문장과 병합을 시도 (너무 짧은 문장 방지)
+            if sentence_lines <= 2 and i + 1 < len(sentences):
+                next_sentence = sentences[i + 1]
+                merged = sentence + " " + next_sentence
+                merged_lines = calculate_text_lines(merged, max_chars_per_line_ppt)
+                if merged_lines <= max_lines_per_slide:
+                    sentence = merged
+                    sentence_lines = merged_lines
+                    i += 1  # 추가로 하나 더 소비
+
+            if current_lines + sentence_lines <= max_lines_per_slide:
+                current_text += sentence + "\n"
+                current_lines += sentence_lines
+            else:
+                slides.append(current_text.strip())
+                split_flags.append(needs_check)
+                slide_number += 1
+                current_text = sentence + "\n"
+                current_lines = sentence_lines
+                needs_check = False
+            i += 1
+
+    if current_text:
+        slides.append(current_text.strip())
+        split_flags.append(needs_check)
+
+    return slides, split_flags
+
+def create_ppt(slide_texts, split_flags, max_chars_per_line_in_ppt=18, font_size=54):
+    prs = Presentation()
+    prs.slide_width = Inches(13.33)
+    prs.slide_height = Inches(7.5)
+    total_slides = len(slide_texts)
+
+    for i, text in enumerate(slide_texts):
+        slide = prs.slides.add_slide(prs.slide_layouts[6])
+        add_text_to_slide(slide, text, font_size, PP_ALIGN.CENTER, max_chars_per_line_in_ppt)
+        if split_flags[i]:
+            add_check_needed_shape(slide)
+        if i == total_slides - 1:
+            add_end_mark(slide)
+    return prs
+
+def add_text_to_slide(slide, text, font_size, alignment, max_chars_per_line):
+    textbox = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(12.33), Inches(6.2))
+    text_frame = textbox.text_frame
+    text_frame.clear()
+    text_frame.vertical_anchor = MSO_VERTICAL_ANCHOR.TOP
+    text_frame.word_wrap = True
+
+    wrapped_lines = textwrap.wrap(text, width=max_chars_per_line, break_long_words=True)
+    for line in wrapped_lines:
+        p = text_frame.add_paragraph()
+        p.text = line
+        p.font.size = Pt(font_size)
+        p.font.name = 'Noto Color Emoji'
+        p.font.bold = True
+        p.font.color.rgb = RGBColor(0, 0, 0)
+        p.alignment = alignment
+        p.vertical_anchor = MSO_VERTICAL_ANCHOR.TOP
+
+    text_frame.auto_size = None
+
+def add_check_needed_shape(slide):
+    shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.5), Inches(0.3), Inches(2.5), Inches(0.5))
+    shape.fill.solid()
+    shape.fill.fore_color.rgb = RGBColor(255, 255, 0)
+    shape.line.color.rgb = RGBColor(0, 0, 0)
+    p = shape.text_frame.paragraphs[0]
+    p.text = "확인 필요!"
+    p.font.size = Pt(18)
+    p.font.bold = True
+    p.font.color.rgb = RGBColor(0, 0, 0)
+    shape.text_frame.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
+    p.alignment = PP_ALIGN.CENTER
+
+def add_end_mark(slide):
+    shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(10), Inches(6), Inches(2), Inches(1))
+    shape.fill.solid()
+    shape.fill.fore_color.rgb = RGBColor(255, 0, 0)
+    shape.line.color.rgb = RGBColor(0, 0, 0)
+    p = shape.text_frame.paragraphs[0]
+    p.text = "끝"
+    p.font.size = Pt(36)
+    p.font.color.rgb = RGBColor(255, 255, 255)
+    shape.text_frame.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
+    p.alignment = PP_ALIGN.CENTER
+
 # --- Streamlit 앱 UI 구성 시작 ---
 
+# 좌측 사이드바 (st.sidebar)
+with st.sidebar:
+    st.markdown('<div style="text-align: center; margin-bottom: 20px;"><i class="fas fa-magic" style="font-size: 3em; color: #3498db;"></i></div>', unsafe_allow_html=True)
+    st.title("메뉴")
+    st.markdown("---")
+    st.header("PPT 설정")
+    
+    # 슬라이드 수 설정 (기존 슬라이더는 제거하고, UI 로직에 맞게 조정)
+    #max_lines = st.slider("슬라이드당 최대 줄 수", 1, 10, 4) # 기존 코드의 슬라이더
+    #max_chars = st.slider("한 줄당 최대 글자 수", 10, 100, 18) # 기존 코드의 슬라이더
+    #font_size = st.slider("폰트 크기", 10, 60, 54) # 기존 코드의 슬라이더
+    #sim_threshold = st.slider("문맥 유사도 기준", 0.0, 1.0, 0.85, step=0.05) # 기존 코드의 슬라이더
+    
+    # UI 개선된 슬라이더
+    max_lines = st.slider("슬라이드당 최대 줄 수", 1, 10, 4, key='sidebar_max_lines')
+    max_chars = st.slider("한 줄당 최대 글자 수", 10, 100, 18, key='sidebar_max_chars')
+    font_size = st.slider("폰트 크기", 10, 60, 54, key='sidebar_font_size')
+    sim_threshold = st.slider("문맥 유사도 기준", 0.0, 1.0, 0.85, step=0.05, key='sidebar_sim_threshold')
+
+    st.checkbox("요약 내용 포함 (미구현)") # 기존 코드에는 없던 기능, placeholder로 유지
+    st.radio("PPT 테마 선택 (미구현)", ["기본", "모던", "다크"], key='sidebar_theme') # 기존 코드에는 없던 기능, placeholder로 유지
+    
+    st.button("설정 저장 (동작 없음)", key='sidebar_save_settings') 
+    st.markdown("---")
+    st.write("문의: support@example.com")
+
+
 # 상단 디자인 BAR
-# st.container를 사용하여 디자인적인 BAR를 만듭니다.
 with st.container():
     st.markdown('<div class="top-design-bar">', unsafe_allow_html=True)
-    st.markdown("<h1>촬영 대본 PPT 자동 생성 AI (KoSimCSE)</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>🎬 촬영 대본 PPT 자동 생성 AI (KoSimCSE)</h1>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
-
-# 메인 콘텐츠 영역은 Streamlit의 기본 레이아웃을 따르며,
-# [data-testid="stAppViewContainer"]에 지정된 배경색으로 흰색 바탕을 유지합니다.
 
 # 대본 입력 방식 선택 섹션 (더 작게, 이모지 반영)
 st.markdown('<div class="input-method-selection-box"><span class="icon">📁</span> 대본 입력 방식 선택</div>', unsafe_allow_html=True)
@@ -242,12 +437,16 @@ st.markdown('<div class="input-method-selection-box"><span class="icon">📁</sp
 # 탭 메뉴 구성 (st.tabs 위젯 사용)
 tab1, tab2 = st.tabs(["Word 파일 업로드", "텍스트 직접 입력"])
 
+uploaded_file_tab1 = None 
+text_input_tab2 = ""
+
 with tab1:
     st.write("Word 파일 (.docx)을 업로드해주세요.")
 
     # 파일 업로더 위젯
-    # 기본 라벨은 숨기고 (label_visibility="collapsed"), 커스텀 텍스트를 마크다운으로 삽입
-    uploaded_file = st.file_uploader(
+    # 기존 코드의 uploaded_file = st.file_uploader("📄 Word 파일 업로드", type=["docx"]) 대신
+    # UI 개선 코드의 커스텀 방식 사용
+    uploaded_file_tab1 = st.file_uploader(
         "Upload your DOCX file here", # 이 텍스트는 내부적으로 사용되지만, CSS로 숨김.
         type=["docx"], # 허용되는 파일 형식
         accept_multiple_files=False, # 단일 파일만 허용
@@ -255,7 +454,6 @@ with tab1:
     )
     
     # 드래그 앤 드롭 영역 내 커스텀 텍스트 및 아이콘 (CSS로 위치 조정)
-    # 이 부분은 st.file_uploader의 위에 띄워지는 형태입니다.
     st.markdown("""
         <div style="text-align: center; margin-top: -160px; pointer-events: none; position: relative; z-index: 1;">
             <i class="fas fa-cloud-upload-alt" style="font-size: 3em; color: #3498db; margin-bottom: 5px;"></i>
@@ -263,14 +461,9 @@ with tab1:
             <p style="margin:0; font-size: 0.85em; color: #888; margin-top: 5px;">Limit 200MB per file • DOCX</p>
         </div>
     """, unsafe_allow_html=True)
-    # `pointer-events: none`은 마크다운 오버레이가 파일 업로더 클릭을 방해하지 않도록 합니다.
-    # `margin-top`과 `z-index`는 텍스트와 아이콘이 파일 업로더 위에 적절히 표시되도록 조절합니다.
 
-    if uploaded_file is not None:
-        st.success(f"파일 '{uploaded_file.name}'이(가) 업로드되었습니다.")
-        # 여기에 업로드된 파일을 처리하는 로직을 추가합니다.
-        # 예: bytes_data = uploaded_file.getvalue()
-        # st.write(bytes_data)
+    if uploaded_file_tab1 is not None:
+        st.success(f"파일 '{uploaded_file_tab1.name}'이(가) 업로드되었습니다.")
 
     # 문제 해결 드롭다운 (st.expander 위젯 사용)
     with st.expander("🙁 Word 파일 업로드 시 문제가 발생하나요?"):
@@ -281,9 +474,10 @@ with tab1:
         st.markdown("- 다른 이름으로 저장 후 다시 시도해보세요.")
 
 with tab2:
-    st.text_area(
+    # 기존 코드의 text_input = st.text_area("또는 텍스트 직접 입력:", height=300) 대신
+    text_input_tab2 = st.text_area(
         "대본을 직접 입력하세요.",
-        height=200,
+        height=200, # 기존 코드의 height=300에서 200으로 변경 (디자인 일관성)
         placeholder="여기에 대본을 입력해주세요...",
         help="여기에 입력된 텍스트로 PPT 대본이 생성됩니다."
     )
@@ -291,8 +485,51 @@ with tab2:
 # 하단 디자인 BAR
 with st.container():
     st.markdown('<div class="bottom-design-bar">', unsafe_allow_html=True)
+    # 기존 코드의 st.button("🚀 PPT 생성"): 대신 UI 개선 코드의 버튼 디자인 사용
     if st.button("🚀 PPT 자동 생성 시작"):
-        # 버튼 클릭 시 실행될 로직
-        st.success("PPT 생성 중입니다... 잠시만 기다려 주세요.")
-        # 여기에 PPT 생성 및 다운로드 로직을 추가합니다.
+        paragraphs = []
+        target_file = None
+        target_text_input = ""
+
+        # 현재 활성화된 탭에 따라 입력값 선택
+        # Streamlit 탭은 활성화된 탭의 위젯 값만 유지합니다.
+        # 따라서, 두 탭의 입력값을 모두 확인해야 합니다.
+        if uploaded_file_tab1 is not None:
+            target_file = uploaded_file_tab1
+        
+        if text_input_tab2.strip():
+            target_text_input = text_input_tab2
+
+        if target_file:
+            paragraphs = extract_text_from_word(target_file)
+        elif target_text_input:
+            paragraphs = [p.strip() for p in target_text_input.split("\n\n") if p.strip()]
+        else:
+            st.warning("PPT 생성을 위해 Word 파일을 업로드하거나 대본을 직접 입력해주세요.")
+            st.stop()
+
+        if not paragraphs:
+            st.error("유효한 텍스트가 없습니다.")
+            st.stop()
+
+        with st.spinner("PPT 생성 중..."):
+            slides, flags = split_text_into_slides_with_similarity(
+                paragraphs, max_lines, max_chars, model, similarity_threshold=sim_threshold
+            )
+            ppt = create_ppt(slides, flags, max_chars, font_size)
+
+            if ppt:
+                ppt_io = io.BytesIO()
+                ppt.save(ppt_io)
+                ppt_io.seek(0)
+                st.download_button(
+                    label="📥 PPT 다운로드",
+                    data=ppt_io,
+                    file_name="paydo_script_ai.pptx",
+                    mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                )
+                st.success(f"총 {len(slides)}개의 슬라이드가 생성되었습니다.")
+                if any(flags):
+                    flagged = [i+1 for i, f in enumerate(flags) if f]
+                    st.warning(f"⚠️ 확인이 필요한 슬라이드: {flagged}")
     st.markdown('</div>', unsafe_allow_html=True)
