@@ -14,7 +14,8 @@ from io import BytesIO
 from sentence_transformers import SentenceTransformer, util
 
 # Streamlit 세팅
-st.set_page_config(page_title="Paydo AI PPT", layout="centered")
+# 레이아웃을 "wide"로 변경하여 사이드바가 브라우저 좌측에 고정되도록 합니다.
+st.set_page_config(page_title="Paydo AI PPT", layout="wide")
 
 # CSS 스타일 정의
 custom_css = """
@@ -35,14 +36,14 @@ custom_css = """
     }
 
     /* Streamlit 메인 컨테이너 폭 조절 및 그림자, 모서리 둥글게 */
-    [data-testid="stAppViewContainer"] {
-        max-width: 800px; /* 컨테이너 최대 너비 */
-        margin: auto; /* 페이지 중앙 정렬 */
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* 그림자 효과 */
-        border-radius: 8px; /* 모서리 둥글게 */
-        overflow: hidden; /* 자식 요소가 컨테이너를 벗어나지 않도록 숨김 */
-        background-color: #fff; /* 메인 컨테이너 배경색을 흰색으로 설정 */
+    /* layout="wide" 일 때 max-width를 조정하려면 stAppViewContainer를 사용하지 않습니다. */
+    /* 대신 stApp의 padding-left를 조정하고, 실제 콘텐츠를 담는 컨테이너를 별도로 만들어 중앙 정렬합니다. */
+    [data-testid="stAppViewContainer"] > .main .block-container {
+        max-width: 800px; /* 메인 콘텐츠의 최대 너비를 800px로 제한 */
+        padding-left: 1rem; /* 좌우 패딩을 조금 더 줄여 여백 확보 */
+        padding-right: 1rem;
     }
+
 
     /* 상단 디자인 BAR 스타일 */
     .top-design-bar {
@@ -60,7 +61,7 @@ custom_css = """
     .top-design-bar h1 {
         color: #fff; /* 제목 텍스트 색상 흰색 */
         margin: 0;
-        font-size: 1.2em; /* 제목 글자 크기 조정 (더 작게) */
+        font-size: 1.0em; /* 제목 글자 크기 더 작게 조정 */
         font-weight: 700;
         display: flex;
         align-items: center;
@@ -75,7 +76,7 @@ custom_css = """
         padding: 25px; /* 바와 버튼 사이의 간격 확보 */
         text-align: center;
         border-bottom-left-radius: 8px;
-        border-bottom-right-radius: 8gpx;
+        border-bottom-right-radius: 8px;
         box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
         margin-left: -1rem;
         margin-right: -1rem;
@@ -238,7 +239,8 @@ custom_css = """
     }
     /* 메인 콘텐츠가 사이드바에 가려지지 않도록 패딩 추가 */
     .stApp {
-        padding-left: 200px; /* 사이드바 너비만큼 왼쪽 패딩 추가 (기본 210px) */
+        /* layout="wide"를 사용하므로 main 컨테이너의 패딩을 조정합니다. */
+        /* stApp 자체에 직접 padding을 추가하면 전체 레이아웃에 영향을 줄 수 있습니다. */
     }
     [data-testid="stSidebar"] .stButton > button {
         background-color: #3498db; /* 사이드바 버튼 색상 */
@@ -249,13 +251,6 @@ custom_css = """
 
     /* 반응형 디자인 */
     @media (max-width: 768px) {
-        [data-testid="stAppViewContainer"] {
-            border-radius: 0;
-            box-shadow: none;
-        }
-        .top-design-bar, .bottom-design-bar {
-            border-radius: 0;
-        }
         /* 모바일에서는 사이드바를 숨기거나 다르게 동작하도록 설정할 수 있습니다. */
         [data-testid="stSidebar"] {
             position: relative; /* 모바일에서는 고정 해제 */
@@ -263,8 +258,13 @@ custom_css = """
             width: 100%;
             padding-top: 0;
         }
-        .stApp {
-            padding-left: 0; /* 모바일에서는 패딩 제거 */
+        [data-testid="stAppViewContainer"] > .main .block-container {
+            max-width: 100%; /* 모바일에서는 최대 너비 제거 */
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+        .top-design-bar, .bottom-design-bar {
+            border-radius: 0;
         }
     }
 </style>
@@ -423,7 +423,8 @@ with st.sidebar:
     st.markdown('<div style="text-align: center; margin-bottom: 20px;"><i class="fas fa-magic" style="font-size: 3em; color: #3498db;"></i></div>', unsafe_allow_html=True)
     st.title("메뉴")
     st.markdown("---")
-    st.header("PPT 설정")
+    st.header("PPT 생성 옵션") # 'PPT 설정' -> 'PPT 생성 옵션'
+    st.markdown("여기서 세부 조건을 조정할 수 있습니다.") # 안내 문구 추가
     
     # 슬라이드 수 설정
     max_lines = st.slider("슬라이드당 최대 줄 수", 1, 10, 4, key='sidebar_max_lines')
@@ -431,10 +432,9 @@ with st.sidebar:
     font_size = st.slider("폰트 크기", 10, 60, 54, key='sidebar_font_size')
     sim_threshold = st.slider("문맥 유사도 기준", 0.0, 1.0, 0.85, step=0.05, key='sidebar_sim_threshold')
 
-    # '요약 내용 포함', 'PPT 테마 선택', '설정 저장' 삭제됨
+    # '요약 내용 포함', 'PPT 테마 선택', '설정 저장', '문의 이메일' 삭제됨
     
     st.markdown("---")
-    st.write("문의: support@example.com")
 
 
 # 상단 디자인 BAR
