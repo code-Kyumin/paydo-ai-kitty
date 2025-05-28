@@ -14,7 +14,7 @@ from io import BytesIO
 from sentence_transformers import SentenceTransformer, util
 
 # Streamlit 세팅
-st.set_page_config(page_title="Paydo AI PPT", layout="centered")
+st.set_page_config(page_title="Paydo AI PPT", layout="centered") # layout="centered" 유지
 # st.title("🎬 AI PPT 생성기 (KoSimCSE)") # 이 부분 제거
 
 # CSS 스타일 정의
@@ -26,7 +26,7 @@ custom_css = """
     @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
 
     /* Streamlit 앱의 전체적인 배경 및 폰트 설정 */
-    html, body {
+    html, body, [data-testid="stAppViewContainer"] {
         font-family: 'Noto Sans KR', sans-serif;
         margin: 0;
         padding: 0;
@@ -35,20 +35,24 @@ custom_css = """
     }
 
     /* Streamlit 메인 컨테이너 폭 조절 및 그림자, 모서리 둥글게 */
+    /* st.set_page_config(layout="centered") 사용 시, margin, left, transition 등은 Streamlit이 자체적으로 관리하므로 제거 */
     [data-testid="stAppViewContainer"] {
-        max-width: 800px; /* 컨테이너 최대 너비 */
-        margin: auto; /* 페이지 중앙 정렬 */
+        max-width: 1000px; /* 컨테이너 최대 너비 유지 */
+        margin: auto; /* 페이지 중앙 정렬 (Streamlit이 관리하지만 명시적으로 유지) */
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* 그림자 효과 */
         border-radius: 8px; /* 모서리 둥글게 */
-        /* overflow: hidden; */ /* 기존 hidden 속성 제거 */
+        overflow-y: auto; /* 내용이 넘칠 때 세로 스크롤 허용 (이전 요청 반영) */
+        overflow-x: hidden; /* 가로 스크롤 방지 */
         background-color: #fff; /* 메인 컨테이너 배경색을 흰색으로 설정 */
-        
-        /* 스크롤 가능하도록 추가 (최소한의 변경) [NEW] */
-        overflow-y: auto; /* 내용이 넘치면 세로 스크롤바 생성 */
         
         /* 하단 고정 바 때문에 메인 컨테이너 하단에 패딩 추가 */
         padding-bottom: 90px; /* 하단 고정 바의 높이(padding 15+15+버튼 높이 고려)에 맞춰 조절 */
     }
+
+    /* 사이드바가 열렸을 때 메인 컨테이너를 오른쪽으로 이동시키는 CSS 제거 (Streamlit이 자체적으로 처리) */
+    /* body.st-sidebar-open [data-testid="stAppViewContainer"] {
+        margin-left: 210px;
+    } */
 
     /* 상단 디자인 BAR 스타일 (기존 stHeader 오버라이드 대신 직접 마크다운에 적용) */
     .top-design-bar {
@@ -70,7 +74,7 @@ custom_css = """
     .top-design-bar h1 {
         color: #fff; /* 제목 텍스트 색상 흰색 */
         margin: 0;
-        font-size: 0.4em !important; /* 제목 글자 크기 조정 */
+        font-size: 1.8em; /* 제목 글자 크기 조정 (0.1em이 너무 작았음, 적절한 크기로 수정) */
         font-weight: 700;
         text-align: center; /* 가운데 정렬 */
         display: flex; /* flexbox 사용 (이모지와 텍스트 정렬) */
@@ -80,8 +84,8 @@ custom_css = """
     }
 
     /* 고정된 하단 바 스타일 (새로 추가) */
-    .fixed-bottom-bar { 
-        background-color: #A2D9CE; /* 옅은 녹색으로 변경 (연두색으로 보이도록) */
+    .bottom-fixed-bar { 
+        background-color: #A2D9CE; /* 옅은 녹색으로 변경 */
         padding: 15px 20px;
         text-align: center;
         box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
@@ -91,26 +95,22 @@ custom_css = """
         left: 50%; /* 왼쪽 50% 이동 */
         transform: translateX(-50%); /* 자신의 너비의 절반만큼 왼쪽으로 이동하여 중앙 정렬 */
         width: 100%; /* 너비 100% (내부 컨테이너를 고려하여 조절) */
-        max-width: 800px; /* 메인 컨테이너와 동일한 최대 너비 적용 */
+        max-width: 1000px; /* 메인 컨테이너와 동일한 최대 너비 적용 */
         z-index: 1000; /* 다른 요소 위에 표시되도록 가장 높은 z-index 부여 */
         display: flex; /* 내부 버튼을 중앙 정렬하기 위한 flexbox */
         justify-content: center; /* 버튼을 중앙에 정렬 */
         align-items: center;
+        /* Streamlit 기본 패딩을 덮기 위해 음수 마진 사용 (stAppViewContainer와 동일하게) */
+        /* max-width가 적용된 상태에서 음수 마진을 주면 중앙 정렬이 깨질 수 있으므로 제거 */
+        /* margin-left: -1rem;  
+        margin-right: -1rem; */
         box-sizing: border-box; /* padding이 width에 포함되도록 */
         border-bottom-left-radius: 8px; /* 메인 컨테이너와 일치하도록 */
         border-bottom-right-radius: 8px; /* 메인 컨테이너와 일치하도록 */
     }
 
-    /* 고정된 하단 바 안에 있는 Streamlit 버튼 컨테이너 (.stButton) */
-    .fixed-bottom-bar .stButton {
-        width: auto; /* flex 컨테이너 내에서 콘텐츠 크기에 맞게 너비 조절 */
-        display: flex; /* 내부 버튼을 가운데 정렬하기 위해 flexbox 적용 */
-        justify-content: center; /* 이 stButton 내부의 실제 버튼을 가운데 정렬 */
-        margin: 0; /* Streamlit 기본 마진 상쇄 (필요 시) */
-    }
-
-    /* 고정된 하단 바 안에 있는 실제 버튼 (button 태그) 스타일 */
-    .fixed-bottom-bar .stButton > button { 
+    /* 하단 고정 바 안에 있는 실제 버튼 (button 태그) 스타일 */
+    .bottom-fixed-bar .stButton > button { 
         background-color: #2ecc71; /* 초록색 (기존과 동일하게 유지) */
         color: white;
         border: none;
@@ -127,33 +127,9 @@ custom_css = """
         gap: 10px;
         transition: background-color 0.3s ease;
     }
-    .fixed-bottom-bar .stButton > button:hover {
+    .bottom-fixed-bar .stButton > button:hover {
         background-color: #27ae60; /* 호버 시 더 어두운 초록색 */
     }
-    
-    /* 기존의 전역 .stButton > button 스타일은 삭제하거나 주석 처리 */
-    /*
-    .stButton > button {
-        background-color: #2ecc71;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 1.2em;
-        font-weight: 700;
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        transition: background-color 0.3s ease;
-    }
-    .stButton > button:hover {
-        background-color: #27ae60;
-    }
-    */
-
 
     /* 대본 입력 방식 선택 섹션 */
     .input-method-selection-box {
@@ -272,32 +248,60 @@ custom_css = """
         color: #777;
     }
 
-    /* 사이드바 스타일 (현재 코드에는 사이드바 관련 UI가 없으므로 해당 CSS는 큰 영향 없음) */
-    /* st.set_page_config(layout="centered") 시 사이드바가 기본적으로 중앙 컨테이너 바깥에 위치하므로,
-       이 부분 CSS는 직접적으로 메인 컨테이너에 영향을 주지 않습니다.
-       따라서 사이드바가 사라지는 문제는 이 부분이 원인이 아닐 가능성이 높습니다. */
+/* PPT 자동 생성 시작 버튼 (메인 콘텐츠 영역의 버튼은 하단 고정 바의 버튼과 겹치므로 제거하거나 주석 처리) */
+/*
+    .stButton > button {
+        background-color: #2ecc71; 
+        color: white;
+        border: none;
+        padding: 12px 25px; 
+        border-radius: 8px; 
+        cursor: pointer;
+        font-size: 1.3em; 
+        font-weight: 700;
+        width: auto; 
+        max-width: 400px; 
+        display: block; 
+        margin: 0 auto; 
+        display: flex; 
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition: background-color 0.3s ease;
+    }
+    .stButton > button:hover {
+        background-color: #27ae60; 
+    }
+*/
+
+    /* 사이드바 스타일 */
+    /* Streamlit의 `layout="centered"`와 함께 `st.sidebar`는 기본적으로 자체적으로 위치를 관리합니다.
+       여기서 `position: fixed;`나 `left: 0;` 등은 Streamlit의 기본 동작과 충돌할 수 있습니다.
+       기본 동작에 맡기고 시각적인 스타일만 조정하는 것이 좋습니다. */
     [data-testid="stSidebar"] {
         background-color: #e7eff6; /* 사이드바 배경색 */
         border-right: 1px solid #ddd;
         box-shadow: 2px 0 5px rgba(0,0,0,0.05);
-        /* position: fixed; */ /* centered 레이아웃에서는 fixed 대신 sticky나 기본값 사용 */
-        left: 0;
-        top: 0;
+        /* position: fixed;  Streamlit이 관리하므로 제거 */
+        /* left: 0; Streamlit이 관리하므로 제거 */
+        /* top: 0; Streamlit이 관리하므로 제거 */
         height: 100%;
-        z-index: 1000;
-        padding-top: 100px; 
+        z-index: 1000; /* 다른 요소 위에 표시 */
+        padding-top: 100px; /* 사이드바 상단 여백을 늘려 숨김 버튼 위치 조절 */
     }
     /* 사이드바 내부 요소에 대한 스타일 */
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2 {
-        margin-bottom: 0.5em; 
+        margin-bottom: 0.5em; /* 제목 및 헤더 아래 여백 */
     }
     [data-testid="stSidebar"] label {
-        font-weight: 600; 
-        margin-bottom: 0.2em; 
+        font-weight: 600; /* 라벨 볼드 처리 */
+        margin-bottom: 0.2em; /* 라벨 아래 여백 */
     }
-    /* 사이드바 햄버거 메뉴 아이콘 버튼 위치 조절 */
-    /* layout="centered" 시 이 버튼이 [data-testid="stHeader"] 내부에 없을 수 있습니다.
-       더 정확한 셀렉터는 Streamlit 버전에 따라 다를 수 있습니다. */
+    /* 사이드바 햄버거 메뉴 아이콘 버튼 위치 조절 (더 정확한 셀렉터) */
+    /* st.set_page_config(layout="centered") 시, stHeader의 메뉴 버튼이 DOM 상 다를 수 있으므로,
+       Streamlit 버전에 따라 이 셀렉터는 동작하지 않을 수 있습니다.
+       일반적으로는 Streamlit이 알아서 배치하므로 직접 조절하지 않는 것이 좋습니다.
+    */
     /*
     [data-testid="stHeader"] button[aria-label="메뉴"] { 
         margin-top: 50px !important; 
@@ -306,27 +310,28 @@ custom_css = """
 
     /* 반응형 디자인 */
     @media (max-width: 768px) {
+        /* 모바일에서는 사이드바를 숨기거나 다르게 동작하도록 설정할 수 있습니다. */
         [data-testid="stSidebar"] {
-            position: relative; 
+            position: relative; /* 모바일에서는 고정 해제 */
             height: auto;
             width: 100%;
-            padding-top: 0; 
+            padding-top: 0; /* 모바일에서는 패딩 초기화 */
             border-right: none;
             box-shadow: none;
         }
         [data-testid="stAppViewContainer"] {
-            max-width: 100%; 
-            border-radius: 0; 
-            box-shadow: none; 
-            margin-left: 0 !important; 
-            padding-bottom: 90px; 
+            max-width: 100%; /* 모바일에서는 최대 너비 제거 */
+            border-radius: 0; /* 모바일에서는 모서리 둥글게 처리 제거 */
+            box-shadow: none; /* 모바일에서는 그림자 제거 */
+            margin-left: 0 !important; /* 모바일에서는 마진 제거 */
+            padding-bottom: 90px; /* 모바일에서도 하단 고정 바 패딩 유지 */
         }
-        .top-design-bar, .fixed-bottom-bar { 
+        .top-design-bar, .bottom-fixed-bar {
             border-radius: 0;
         }
-        .fixed-bottom-bar .stButton > button { 
-             width: auto; 
-             max-width: none; 
+        .bottom-fixed-bar .stButton > button {
+             width: auto; /* 모바일에서도 너비 자동 조절 */
+             max-width: none; /* 모바일에서는 최대 너비 제한 해제 */
         }
     }
 </style>
@@ -446,7 +451,7 @@ def add_text_to_slide(slide, text, font_size, alignment, max_chars_per_line):
         p = text_frame.add_paragraph()
         p.text = line
         p.font.size = Pt(font_size)
-        p.font.name = 'Noto Color Emoji'
+        p.font.name = 'Noto Color Emoji' # Noto Sans KR 폰트 추가 설치 필요 시 고려
         p.font.bold = True
         p.font.color.rgb = RGBColor(0, 0, 0)
         p.alignment = alignment
@@ -479,37 +484,51 @@ def add_end_mark(slide):
     shape.text_frame.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
     p.alignment = PP_ALIGN.CENTER
 
-
 # --- Streamlit 앱 UI 구성 시작 ---
 
-# 상단 바 (st.markdown을 사용하여 HTML h1 태그 삽입)
-st.markdown("""
-    <div class="top-design-bar">
-        <h1 style='color: #fff; margin: 0; 
-                   font-size: 0.4em !important; /* !important를 인라인에 추가 */
-                   font-weight: 700; text-align: center; 
-                   display: flex; align-items: center; justify-content: center; gap: 10px;'>
-            🎬 촬영 대본 PPT 자동 생성 AI (KoSimCSE)
-        </h1>
-    </div>
-""", unsafe_allow_html=True)
+# 좌측 사이드바 (st.sidebar)
+with st.sidebar:
+    st.markdown("---") # 구분선 유지
+    st.header("⚙️ PPT 생성 옵션") # 'PPT 설정' -> '⚙️ PPT 생성 옵션' (이모지 추가)
+    # 안내 문구 수정
+    st.markdown("<p style='font-size:0.9em; color:#555;'>생성될 PPT의 세부 옵션을 설정할 수 있습니다.</p>", unsafe_allow_html=True)
+    
+    # 슬라이드 수 설정 (이모지 추가)
+    max_lines = st.slider("📏 슬라이드당 최대 줄 수", 1, 10, 4, key='sidebar_max_lines')
+    # 한 줄당 최대 글자 수 (이모지 추가)
+    max_chars = st.slider("🔠 한 줄당 최대 글자 수", 10, 100, 18, key='sidebar_max_chars')
+    # 폰트 크기 (이모지 추가)
+    font_size = st.slider("✍️ 폰트 크기", 10, 60, 54, key='sidebar_font_size')
+    # 문맥 유사도 기준 (이모지 추가)
+    sim_threshold = st.slider("💡 문맥 유사도 기준", 0.0, 1.0, 0.85, step=0.05, key='sidebar_sim_threshold')
+
+    st.markdown("---")
 
 
-# 대본 입력 방식 선택 섹션
+# 상단 디자인 BAR (st.title 대신 직접 마크다운 사용)
+with st.container():
+    st.markdown('<div class="top-design-bar">', unsafe_allow_html=True)
+    st.markdown("<h1>🎬 촬영 대본 PPT 자동 생성 AI (KoSimCSE)</h1>", unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# 대본 입력 방식 선택 섹션 (더 작게, 이모지 반영)
 st.markdown('<div class="input-method-selection-box"><span class="icon">📁</span> 대본 입력 방식 선택</div>', unsafe_allow_html=True)
 
 # 탭 메뉴 구성 (st.tabs 위젯 사용)
-tab1, tab2 = st.tabs(["Word 파일 업로드", "텍스트 직접 입력"])
+tab1, tab2 = st.tabs(["📘 Word 파일 업로드", "📝 텍스트 직접 입력"])
+
+uploaded_file_tab1 = None 
+text_input_tab2 = ""
 
 with tab1:
     st.write("Word 파일 (.docx)을 업로드해주세요.")
 
     # 파일 업로더 위젯
-    uploaded_file_tab1 = st.file_uploader( # 변수명 통일 (uploaded_file_tab1)
-        "파일을 드래그 앤 드롭하거나 찾아보세요.", 
-        type=["docx"], 
-        accept_multiple_files=False, 
-        label_visibility="collapsed" 
+    uploaded_file_tab1 = st.file_uploader(
+        "Upload your DOCX file here", # 이 텍스트는 내부적으로 사용되지만, CSS로 숨김.
+        type=["docx"], # 허용되는 파일 형식
+        accept_multiple_files=False, # 단일 파일만 허용
+        label_visibility="collapsed" # 기본 라벨 숨기기
     )
     
     # 드래그 앤 드롭 영역 내 커스텀 텍스트 및 아이콘 (CSS로 위치 조정)
@@ -517,13 +536,11 @@ with tab1:
         <div style="text-align: center; margin-top: -160px; pointer-events: none; position: relative; z-index: 1;">
             <i class="fas fa-cloud-upload-alt" style="font-size: 3em; color: #3498db; margin-bottom: 5px;"></i>
             <p style="margin:0; font-size: 1.1em; color: #666;">Drag and drop file here</p>
-        </div>
-        <div style="text-align: center; font-size: 0.85em; color: #888; margin-top: 10px; position: relative; z-index: 1;">
-            Limit 200MB per file • DOCX
+            <p style="margin:0; font-size: 0.85em; color: #888; margin-top: 5px;">Limit 200MB per file • DOCX</p>
         </div>
     """, unsafe_allow_html=True)
 
-    if uploaded_file_tab1 is not None: # 변수명 통일
+    if uploaded_file_tab1 is not None:
         st.success(f"파일 '{uploaded_file_tab1.name}'이(가) 업로드되었습니다.")
 
     # 문제 해결 드롭다운 (st.expander 위젯 사용)
@@ -536,27 +553,16 @@ with tab1:
         st.markdown("- 다른 이름으로 저장 후 다시 시도해보세요.")
 
 with tab2:
-    text_input_tab2 = st.text_area( # 변수명 통일 (text_input_tab2)
+    text_input_tab2 = st.text_area(
         "대본을 직접 입력하세요.",
-        height=200,
+        height=200, 
         placeholder="여기에 대본을 입력해주세요...",
         help="여기에 입력된 텍스트로 PPT 대본이 생성됩니다."
     )
 
-# UI 입력 (기존 하단 UI 입력 슬라이더 부분)
-st.markdown("---") # 구분선 추가
-st.subheader("⚙️ PPT 생성 옵션")
-st.write("생성될 PPT의 세부 옵션을 설정할 수 있습니다.")
-
-max_lines = st.slider("슬라이드당 최대 줄 수", 1, 10, 4)
-max_chars = st.slider("한 줄당 최대 글자 수", 10, 100, 18)
-font_size = st.slider("폰트 크기", 10, 60, 54)
-sim_threshold = st.slider("문맥 유사도 기준", 0.0, 1.0, 0.85, step=0.05)
-
-
 # 고정된 하단 바 (새롭게 추가)
-st.markdown('<div class="fixed-bottom-bar">', unsafe_allow_html=True) 
-if st.button("🚀 PPT 자동 생성 시작"): 
+st.markdown('<div class="bottom-fixed-bar">', unsafe_allow_html=True) 
+if st.button("🚀 PPT 자동 생성 시작"):
     paragraphs = []
     target_file = None
     target_text_input = ""
