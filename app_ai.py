@@ -75,7 +75,7 @@ custom_css = """
     .top-design-bar h1 {
         color: #fff; /* 제목 텍스트 색상 흰색 */
         margin: 0;
-        font-size: 0.7em; /* 제목 글자 크기 조정 (0.7em) */
+        font-size: 0.4em; /* 제목 글자 크기 조정 (0.4em) */
         font-weight: 700;
         text-align: center; /* 가운데 정렬 */
         display: flex; /* flexbox 사용 (이모지와 텍스트 정렬) */
