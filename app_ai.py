@@ -16,8 +16,8 @@ st.set_page_config(page_title="촬영 대본 PPT 자동 생성 AI", layout="cent
 st.markdown("""
 <style>
     .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
         font-family: 'Segoe UI', sans-serif;
     }
     h1.title-style {
@@ -28,10 +28,10 @@ st.markdown("""
     }
     .section {
         background-color: #f9f9f9;
-        padding: 1.2rem;
+        padding: 1rem 1.2rem;
         border-radius: 0.5rem;
-        box-shadow: 0 0 4px rgba(0, 0, 0, 0.05);
-        margin-bottom: 1.5rem;
+        border: 1px solid #ddd;
+        margin-bottom: 1rem;
     }
     .stSlider > div {
         padding-top: 0.5rem;
@@ -40,7 +40,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # 제목 및 안내
-st.markdown('<h1 class="title-style">촬영 대본 PPT 자동 생성 AI (KoSimCSE)</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="title-style">🎬 촬영 대본 PPT 자동 생성 AI (KoSimCSE)</h1>', unsafe_allow_html=True)
 st.markdown("""
 <div class="section">
     📢 Word 파일 업로드 오류 시, **파일명을 영문으로 변경한 후 업로드**해 주세요. 
@@ -55,20 +55,20 @@ def load_model():
 model = load_model()
 
 # 사이드바 슬라이드 설정
-st.sidebar.markdown("#### 슬라이드 설정")
-max_lines = st.sidebar.slider("슬라이드당 최대 줄 수", 1, 10, 4)
-max_chars = st.sidebar.slider("한 줄당 최대 글자 수", 10, 100, 18)
-font_size = st.sidebar.slider("폰트 크기", 10, 60, 54)
-sim_threshold = st.sidebar.slider("문맥 유사도 기준", 0.0, 1.0, 0.85, step=0.05)
+st.sidebar.markdown("#### ⚙️ 슬라이드 설정")
+max_lines = st.sidebar.slider("📏 슬라이드당 최대 줄 수", 1, 10, 4)
+max_chars = st.sidebar.slider("🔠 한 줄당 최대 글자 수", 10, 100, 18)
+font_size = st.sidebar.slider("🔡 폰트 크기", 10, 60, 54)
+sim_threshold = st.sidebar.slider("🧠 문맥 유사도 기준", 0.0, 1.0, 0.85, step=0.05)
 
 # 입력 구역
 st.markdown("""
 <div class="section">
-    <h4 style='margin-bottom:0.8rem'>Word 파일 업로드 또는 텍스트 직접 입력</h4>
+    <h4 style='margin-bottom:0.8rem'>📤 Word 파일 업로드 또는 텍스트 직접 입력</h4>
 """, unsafe_allow_html=True)
-uploaded_file = st.file_uploader("Word 파일 업로드 (.docx)", type=["docx"])
-st.markdown("<div style='margin-top: 1rem'></div>", unsafe_allow_html=True)
-st.markdown("**또는 아래 입력란에 직접 텍스트를 작성하세요:**")
+uploaded_file = st.file_uploader("📄 Word 파일 업로드 (.docx)", type=["docx"])
+st.markdown("<div style='margin-top: 0.5rem'></div>", unsafe_allow_html=True)
+st.markdown("✍️ 또는 아래 입력란에 직접 텍스트를 작성하세요:")
 text_input = st.text_area("", height=300)
 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -225,7 +225,7 @@ def add_end_mark(slide):
     p.alignment = PP_ALIGN.CENTER
 
 # 실행 버튼
-st.markdown("<div style='text-align:center; margin-top:2rem'>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; margin-top:1.5rem'>", unsafe_allow_html=True)
 if st.button("🚀 PPT 자동 생성 시작", use_container_width=True):
     paragraphs = []
     if uploaded_file:
