@@ -70,7 +70,7 @@ st.markdown("""
 uploaded_file = st.file_uploader("📄 Word 파일 업로드 (.docx)", type=["docx"])
 st.markdown("<div style='margin-top: 0.5rem'></div>", unsafe_allow_html=True)
 st.markdown("✍️ 또는 아래 입력란에 직접 텍스트를 작성하세요:")
-text_input = st.text_area("텍스트 입력", label_visibility="collapsed", "", height=300)
+text_input = st.text_area("텍스트 입력", height=300, label_visibility="collapsed")
 st.markdown("""
     </div>
 </div>
