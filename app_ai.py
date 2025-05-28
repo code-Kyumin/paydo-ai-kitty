@@ -40,14 +40,11 @@ custom_css = """
         margin: auto; /* 페이지 중앙 정렬 */
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* 그림자 효과 */
         border-radius: 8px; /* 모서리 둥글게 */
-        overflow: hidden; /* 자식 요소가 컨테이너를 벗어나지 않도록 숨김 */
+        /* overflow: hidden; */ /* 기존 hidden 속성 제거 */
         background-color: #fff; /* 메인 컨테이너 배경색을 흰색으로 설정 */
         
-        /* 스크롤 가능하도록 추가 */
-        height: 100vh; /* 뷰포트 높이에 맞춤 */
-        display: flex;
-        flex-direction: column;
-        overflow-y: auto; /* 내용이 넘치면 스크롤바 생성 [NEW]*/
+        /* 스크롤 가능하도록 추가 (최소한의 변경) [NEW] */
+        overflow-y: auto; /* 내용이 넘치면 세로 스크롤바 생성 */
         
         /* 하단 고정 바 때문에 메인 컨테이너 하단에 패딩 추가 */
         padding-bottom: 90px; /* 하단 고정 바의 높이(padding 15+15+버튼 높이 고려)에 맞춰 조절 */
@@ -276,54 +273,60 @@ custom_css = """
     }
 
     /* 사이드바 스타일 (현재 코드에는 사이드바 관련 UI가 없으므로 해당 CSS는 큰 영향 없음) */
+    /* st.set_page_config(layout="centered") 시 사이드바가 기본적으로 중앙 컨테이너 바깥에 위치하므로,
+       이 부분 CSS는 직접적으로 메인 컨테이너에 영향을 주지 않습니다.
+       따라서 사이드바가 사라지는 문제는 이 부분이 원인이 아닐 가능성이 높습니다. */
     [data-testid="stSidebar"] {
         background-color: #e7eff6; /* 사이드바 배경색 */
         border-right: 1px solid #ddd;
         box-shadow: 2px 0 5px rgba(0,0,0,0.05);
-        position: fixed; /* 브라우저 좌측에 고정 */
+        /* position: fixed; */ /* centered 레이아웃에서는 fixed 대신 sticky나 기본값 사용 */
         left: 0;
         top: 0;
         height: 100%;
-        z-index: 1000; /* 다른 요소 위에 표시 */
-        padding-top: 100px; /* 사이드바 상단 여백을 늘려 숨김 버튼 위치 조절 */
+        z-index: 1000;
+        padding-top: 100px; 
     }
     /* 사이드바 내부 요소에 대한 스타일 */
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2 {
-        margin-bottom: 0.5em; /* 제목 및 헤더 아래 여백 */
+        margin-bottom: 0.5em; 
     }
     [data-testid="stSidebar"] label {
-        font-weight: 600; /* 라벨 볼드 처리 */
-        margin-bottom: 0.2em; /* 라벨 아래 여백 */
+        font-weight: 600; 
+        margin-bottom: 0.2em; 
     }
-    /* 사이드바 햄버거 메뉴 아이콘 버튼 위치 조절 (더 정확한 셀렉터) */
-    [data-testid="stHeader"] button[aria-label="메뉴"] { /* stHeader 내의 메뉴 버튼 */
-        margin-top: 50px !important; /* 이 값을 조정하여 햄버거 메뉴 아이콘 위치를 조절 */
+    /* 사이드바 햄버거 메뉴 아이콘 버튼 위치 조절 */
+    /* layout="centered" 시 이 버튼이 [data-testid="stHeader"] 내부에 없을 수 있습니다.
+       더 정확한 셀렉터는 Streamlit 버전에 따라 다를 수 있습니다. */
+    /*
+    [data-testid="stHeader"] button[aria-label="메뉴"] { 
+        margin-top: 50px !important; 
     }
+    */
 
     /* 반응형 디자인 */
     @media (max-width: 768px) {
-        /* 모바일에서는 사이드바를 숨기거나 다르게 동작하도록 설정할 수 있습니다. */
         [data-testid="stSidebar"] {
-            position: relative; /* 모바일에서는 고정 해제 */
+            position: relative; 
             height: auto;
             width: 100%;
-            padding-top: 0; /* 모바일에서는 패딩 초기화 */
+            padding-top: 0; 
             border-right: none;
             box-shadow: none;
         }
         [data-testid="stAppViewContainer"] {
-            max-width: 100%; /* 모바일에서는 최대 너비 제거 */
-            border-radius: 0; /* 모바일에서는 모서리 둥글게 처리 제거 */
-            box-shadow: none; /* 모바일에서는 그림자 제거 */
-            margin-left: 0 !important; /* 모바일에서는 마진 제거 */
-            padding-bottom: 90px; /* 모바일에서도 하단 고정 바 패딩 유지 */
+            max-width: 100%; 
+            border-radius: 0; 
+            box-shadow: none; 
+            margin-left: 0 !important; 
+            padding-bottom: 90px; 
         }
         .top-design-bar, .fixed-bottom-bar { 
             border-radius: 0;
         }
         .fixed-bottom-bar .stButton > button { 
-             width: auto; /* 모바일에서도 너비 자동 조절 */
-             max-width: none; /* 모바일에서는 최대 너비 제한 해제 */
+             width: auto; 
+             max-width: none; 
         }
     }
 </style>
