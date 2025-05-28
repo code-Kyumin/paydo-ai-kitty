@@ -14,7 +14,7 @@ from io import BytesIO
 from sentence_transformers import SentenceTransformer, util
 
 # Streamlit 세팅
-# 메인 콘텐츠를 가운데 배치하기 위해 다시 "centered" 레이아웃 사용
+# 메인 콘텐츠를 가운데 배치하기 위해 "centered" 레이아웃 사용
 st.set_page_config(page_title="Paydo AI PPT", layout="centered")
 
 # CSS 스타일 정의
@@ -44,6 +44,20 @@ custom_css = """
         border-radius: 8px; /* 모서리 둥글게 */
         overflow: hidden; /* 자식 요소가 컨테이너를 벗어나지 않도록 숨김 */
         background-color: #fff; /* 메인 컨테이너 배경색을 흰색으로 설정 */
+        position: relative; /* 사이드바와의 간격 조정을 위한 기준 */
+        left: 0; /* 초기 위치 설정 */
+        transition: margin-left 0.3s ease; /* 사이드바 열림/닫힘 시 부드러운 전환 */
+    }
+
+    /* 사이드바가 열렸을 때 메인 컨테이너를 오른쪽으로 이동 */
+    /* Streamlit의 기본 동작을 오버라이드하기 때문에 데이터셋 ID 확인 필요 */
+    /* stSidebarV2는 최신 Streamlit 버전의 사이드바 컨테이너 (실제 DOM 구조 확인 필요) */
+    /* 이 CSS는 JavaScript로 사이드바의 열림/닫힘 상태를 감지하고 body 클래스를 추가하는 방식으로 동작할 가능성이 높습니다.
+       여기서는 Streamlit의 내부 구조를 추측하여 적용합니다. */
+    /* Streamlit 1.29.0 이상에서 사이드바가 열리면 body에 .st-sidebar-open 클래스가 추가됩니다. */
+    body.st-sidebar-open [data-testid="stAppViewContainer"] {
+        margin-left: 210px; /* 사이드바 너비만큼 메인 콘텐츠를 오른쪽으로 밀어냅니다. */
+        /* 이 값은 사이드바 너비와 맞춰야 합니다. */
     }
 
     /* 상단 디자인 BAR 스타일 */
@@ -63,7 +77,7 @@ custom_css = """
     .top-design-bar h1 {
         color: #fff; /* 제목 텍스트 색상 흰색 */
         margin: 0;
-        font-size: 1.0em; /* 제목 글자 크기 더 작게 조정 */
+        font-size: 0.9em; /* 제목 글자 크기 더 작게 조정 (한 줄로 표시) */
         font-weight: 700;
         text-align: center; /* 가운데 정렬 */
         display: flex; /* flexbox 사용 (이모지와 텍스트 정렬) */
@@ -74,9 +88,9 @@ custom_css = """
 
     /* 하단 디자인 BAR 스타일 */
     .bottom-design-bar {
-        background-color: #2ecc71; /* 초록색 */
+        background-color: #A2D9CE; /* 옅은 녹색으로 변경 (더 얇게 보이도록) */
         color: #fff;
-        padding: 25px; /* 바와 버튼 사이의 간격 확보 */
+        padding: 10px 20px; /* 패딩을 줄여 더 얇게 */
         text-align: center;
         border-bottom-left-radius: 8px;
         border-bottom-right-radius: 8px;
@@ -113,7 +127,7 @@ custom_css = """
         margin-bottom: 20px;
     }
     .stTabs [data-baseweb="tab"] {
-        background-color: #fff;
+        background-color: lightcyan; /* 파스텔 톤 옅은 색 */
         border-radius: 4px 4px 0px 0px;
         padding: 10px 15px;
         font-weight: 500;
@@ -123,7 +137,7 @@ custom_css = """
         border-bottom: 2px solid #3498db !important; 
         color: #3498db !important; 
         font-weight: 700;
-        background-color: #fff;
+        background-color: lightblue; /* 선택된 탭 더 진한 파스텔 톤 */
     }
     .stTabs [data-baseweb="tab"]:hover {
         background-color: #f5f5f5;
@@ -210,7 +224,7 @@ custom_css = """
 
     /* PPT 자동 생성 시작 버튼 (하단 바 내에 포함) */
     .bottom-design-bar .stButton > button {
-        background-color: #FF5733; /* 눈에 띄는 색상 (오렌지-레드) */
+        background-color: orangered; /* 눈에 띄는 색상 (오렌지-레드) */
         color: white;
         border: none;
         padding: 12px 25px; /* 패딩 증가로 버튼 크기 키우기 */
@@ -227,7 +241,7 @@ custom_css = """
         transition: background-color 0.3s ease;
     }
     .bottom-design-bar .stButton > button:hover {
-        background-color: #E64A2F; /* 호버 색상 */
+        background-color: #CC4000; /* 호버 색상 */
     }
 
     /* 사이드바 스타일 */
@@ -240,20 +254,21 @@ custom_css = """
         top: 0;
         height: 100%;
         z-index: 1000; /* 다른 요소 위에 표시 */
-        padding-top: 20px; /* 상단 여백 */
+        padding-top: 100px; /* 사이드바 상단 여백을 늘려 숨김 버튼 위치 조절 */
     }
     /* 사이드바 내부 요소에 대한 스타일 */
-    [data-testid="stSidebar"] h1 {
-        margin-bottom: 0.5em; /* 제목 아래 여백 */
-    }
-    [data-testid="stSidebar"] h2 {
-        margin-bottom: 0.5em; /* 헤더 아래 여백 */
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2 {
+        margin-bottom: 0.5em; /* 제목 및 헤더 아래 여백 */
     }
     [data-testid="stSidebar"] label {
         font-weight: 600; /* 라벨 볼드 처리 */
         margin-bottom: 0.2em; /* 라벨 아래 여백 */
     }
-
+    /* 사이드바 햄버거 메뉴 아이콘 버튼 위치 조절 (더 정확한 셀렉터) */
+    /* Streamlit 버전에 따라 data-testid가 변경될 수 있습니다. */
+    [data-testid="stHeader"] button[aria-label="메뉴"] { /* stHeader 내의 메뉴 버튼 */
+        margin-top: 50px !important; /* 이 값을 조정하여 햄버거 메뉴 아이콘 위치를 조절 */
+    }
 
     /* 반응형 디자인 */
     @media (max-width: 768px) {
@@ -262,7 +277,7 @@ custom_css = """
             position: relative; /* 모바일에서는 고정 해제 */
             height: auto;
             width: 100%;
-            padding-top: 0;
+            padding-top: 0; /* 모바일에서는 패딩 초기화 */
             border-right: none;
             box-shadow: none;
         }
@@ -270,6 +285,7 @@ custom_css = """
             max-width: 100%; /* 모바일에서는 최대 너비 제거 */
             border-radius: 0; /* 모바일에서는 모서리 둥글게 처리 제거 */
             box-shadow: none; /* 모바일에서는 그림자 제거 */
+            margin-left: 0 !important; /* 모바일에서는 마진 제거 */
         }
         .top-design-bar, .bottom-design-bar {
             border-radius: 0;
@@ -433,9 +449,6 @@ def add_end_mark(slide):
 
 # 좌측 사이드바 (st.sidebar)
 with st.sidebar:
-    # 상단의 메뉴와 이미지 삭제됨
-    # st.markdown('<div style="text-align: center; margin-bottom: 20px;"><i class="fas fa-magic" style="font-size: 3em; color: #3498db;"></i></div>', unsafe_allow_html=True)
-    # st.title("메뉴") 
     st.markdown("---") # 구분선 유지
     st.header("⚙️ PPT 생성 옵션") # 'PPT 설정' -> '⚙️ PPT 생성 옵션' (이모지 추가)
     # 안내 문구 수정
@@ -464,7 +477,8 @@ with st.container():
 st.markdown('<div class="input-method-selection-box"><span class="icon">📁</span> 대본 입력 방식 선택</div>', unsafe_allow_html=True)
 
 # 탭 메뉴 구성 (st.tabs 위젯 사용)
-tab1, tab2 = st.tabs(["Word 파일 업로드", "텍스트 직접 입력"])
+# 탭 이름에 Font Awesome 아이콘 사용 (워드 아이콘)
+tab1, tab2 = st.tabs(["<i class='fas fa-file-word'></i> Word 파일 업로드", "📝 텍스트 직접 입력"])
 
 uploaded_file_tab1 = None 
 text_input_tab2 = ""
