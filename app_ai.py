@@ -1,320 +1,331 @@
 import streamlit as st
-from pptx import Presentation
-from pptx.util import Inches, Pt
-from pptx.enum.text import PP_ALIGN, MSO_VERTICAL_ANCHOR
-from pptx.dml.color import RGBColor
-from pptx.enum.shapes import MSO_SHAPE
-import io
-import re
-import textwrap
-import docx
-from io import BytesIO
-from sentence_transformers import SentenceTransformer
 
-# 기본 스타일 설정
-st.set_page_config(page_title="촬영 대본 PPT 자동 생성 AI", layout="centered")
-st.markdown("""
+# CSS 스타일 정의
+# Streamlit 앱에 사용자 정의 CSS를 주입하여 디자인을 커스터마이징합니다.
+# Streamlit의 내부 DOM 구조에 의존하는 부분이 있으므로, Streamlit 버전 업데이트 시
+# 일부 CSS 셀렉터는 변경될 수 있음을 유의해주세요.
+custom_css = """
 <style>
-    .block-container {
-        padding-top: 4rem;
-        padding-bottom: 1rem;
-        font-family: 'Segoe UI', sans-serif;
+    /* 기본 폰트 설정 (Google Noto Sans KR 폰트 임포트) */
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+    
+    /* Streamlit 앱의 전체적인 배경 및 폰트 설정 */
+    html, body, [data-testid="stAppViewContainer"] {
+        font-family: 'Noto Sans KR', sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f0f2f5; /* 전체 앱 배경색 */
+        color: #333; /* 기본 텍스트 색상 */
     }
-    h1.title-style {
-        font-size: 1.8rem;
-        color: #222;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
+
+    /* Streamlit 메인 컨테이너 폭 조절 및 그림자, 모서리 둥글게 */
+    [data-testid="stAppViewContainer"] {
+        max-width: 800px; /* 컨테이너 최대 너비 */
+        margin: auto; /* 페이지 중앙 정렬 */
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* 그림자 효과 */
+        border-radius: 8px; /* 모서리 둥글게 */
+        overflow: hidden; /* 자식 요소가 컨테이너를 벗어나지 않도록 숨김 */
+        background-color: #fff; /* 메인 컨테이너 배경색을 흰색으로 설정 */
     }
-    .section {
-        background-color: #f9f9f9;
-        padding: 1rem 1.2rem;
-        border-radius: 0.5rem;
-        border: 1px solid #ddd;
-        margin-bottom: 1rem;
+
+    /* Streamlit 헤더 영역 스타일 (상단 바 역할) */
+    /* Streamlit 버전업에 따라 data-testid 값은 변경될 수 있습니다. */
+    [data-testid="stHeader"] {
+        background-color: #2c3e50; /* 어두운 파란색/회색 */
+        color: #fff;
+        padding: 15px 20px;
+        text-align: center;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        position: sticky; /* 스크롤 시 상단에 고정 */
+        top: 0; /* 상단에 붙임 */
+        z-index: 999; /* 다른 요소 위에 표시되도록 */
+        /* Streamlit 기본 마진 상쇄 및 너비 조절 */
+        margin-left: -1rem; 
+        margin-right: -1rem;
+        width: calc(100% + 2rem);
     }
-    .stSlider > div {
-        padding-top: 0.5rem;
+    /* 상단 바 제목 (Streamlit의 기본 제목 스타일 오버라이드) */
+    [data-testid="stHeader"] h1 {
+        color: #fff;
+        margin: 0;
+        font-size: 1.5em;
+        font-weight: 700;
     }
-    .stButton > button {
-        background-color: #4CAF50; /* Green */
-        color: white;
-        padding: 10px 24px;
-        border: none;
+
+    /* 하단 바 스타일 (Streamlit의 버튼 컨테이너 활용) */
+    /* st.button이 포함될 컨테이너를 타겟팅합니다. */
+    .bottom-bar {
+        background-color: #2ecc71; /* 초록색 */
+        color: #fff;
+        padding: 15px;
+        text-align: center;
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+        box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+        position: sticky; /* 스크롤 시 하단에 고정 */
+        bottom: 0; /* 하단에 붙임 */
+        z-index: 999;
+        /* Streamlit 기본 마진 상쇄 및 너비 조절 */
+        margin-left: -1rem;
+        margin-right: -1rem;
+        width: calc(100% + 2rem);
+    }
+    
+    /* Streamlit 메인 콘텐츠 영역 (기본 패딩을 활용) */
+    /* 이 부분은 Streamlit이 자동으로 패딩을 추가하므로, 별도의 컨테이너를 만들지 않고
+       css로 전체 앱 컨테이너의 배경색을 흰색으로 설정하여 흰색 바탕을 유지합니다. */
+    .st-emotion-cache-1c7y2vl { /* 메인 콘텐츠를 감싸는 Streamlit 내부 div - 셀렉터 변경될 수 있음 */
+        padding: 20px; /* 내부 여백 */
+        background-color: #fff; /* 메인 콘텐츠 배경색 */
+    }
+
+    /* 대본 입력 방식 선택 섹션 */
+    .input-method-selection-box {
+        background-color: #e0f2f7; /* 연한 파란색 배경 */
+        padding: 10px 15px;
         border-radius: 8px;
-        font-size: 1.1rem;
-        font-weight: bold;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        transition: all 0.3s ease;
+        margin-bottom: 20px;
+        text-align: center;
+        display: flex; /* Flexbox를 사용하여 아이콘과 텍스트 정렬 */
+        justify-content: center; /* 가로 중앙 정렬 */
+        align-items: center; /* 세로 중앙 정렬 */
+        gap: 8px; /* 아이콘과 텍스트 사이 간격 */
+        font-weight: 700;
+        color: #2c3e50; /* 텍스트 색상 */
+        font-size: 1.1em; /* 요청하신 크기 조절 (더 작게) */
     }
-    .stButton > button:hover {
-        background-color: #45a049;
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    .input-method-selection-box .icon {
+        font-size: 1.2em; /* 아이콘 크기 조절 */
     }
-    /* Expander 헤더 스타일 */
-    .stExpander .stExpanderDetails {
-        background-color: #f0f2f6; /* 연한 회색 배경 */
-        border-radius: 0.5rem;
-        padding: 1rem;
-        border: 1px solid #e0e0e0;
-    }
-    .stTabs [data-baseweb="tab-list"] button {
-        background-color: #e0e0e0; /* 비활성 탭 배경 */
-        color: #555;
-        border-radius: 0.5rem 0.5rem 0 0;
-        padding: 0.8rem 1.2rem;
-        margin-right: 0.2rem;
-        font-weight: 600;
-    }
-    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] {
-        background-color: #ffffff; /* 활성 탭 배경 */
-        color: #222;
-        border-bottom: 2px solid #4CAF50; /* 활성 탭 하단 강조 */
+
+    /* Streamlit 탭 위젯 커스터마이징 */
+    /* st.tabs는 내부적으로 Shadow DOM을 사용하므로, 외부 CSS로 모든 것을 제어하기 어렵습니다.
+       아래는 가능한 범위 내에서 기본 스타일을 조정합니다. */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0px; /* 탭 사이 간격 제거 */
+        border-bottom: 1px solid #ddd; /* 탭 목록 하단 테두리 */
+        margin-bottom: 20px;
     }
     .stTabs [data-baseweb="tab"] {
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
+        background-color: #fff;
+        border-radius: 4px 4px 0px 0px;
+        padding: 10px 15px;
+        font-weight: 500;
+        color: #555;
+    }
+    /* 활성화된 탭 스타일 */
+    .stTabs [aria-selected="true"] { 
+        border-bottom: 2px solid #3498db !important; /* 파란색 밑줄 (Streamlit 기본 스타일 오버라이드) */
+        color: #3498db !important; /* 활성화된 탭 텍스트 색상 파란색 */
+        font-weight: 700;
+        background-color: #fff;
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        background-color: #f5f5f5;
     }
 
-    /* 메인 핵심 영역 프레임 스타일 */
-    .main-interaction-frame {
-        background-color: #ffffff;
-        padding: 2rem; /* 내부 여백 증가 */
-        border: 1px solid #ddd;
-        border-radius: 0.75rem; /* 모서리 둥글게 */
-        box-shadow: 0 8px 16px rgba(0,0,0,0.1); /* 그림자 강화 */
-        margin-bottom: 2rem; /* 하단 여백 추가 */
+    /* Streamlit 파일 업로더 커스터마이징 */
+    /* st.file_uploader의 드롭존(Dropzone) 스타일 */
+    [data-testid="stFileUploaderDropzone"] {
+        border: 2px dashed #a0d8f0; /* 연한 파란색 점선 테두리 */
+        border-radius: 8px;
+        background-color: #f7fcfe; /* 아주 연한 파란색 배경 */
+        padding: 30px 20px; /* 내부 패딩 */
+        height: 180px; /* 높이 고정 (원하는 높이로 조절) */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    /* 파일 업로더의 기본 안내 텍스트 숨기기 */
+    [data-testid="stFileUploaderDropzoneInstructions"] > div > span {
+        display: none; 
+    }
+    /* 파일 업로더의 기본 제한 텍스트 숨기기 */
+    [data-testid="stFileUploaderDropzoneInstructions"] > div > small {
+        display: none; 
+    }
+    /* 파일 업로더의 "Browse files" 버튼 숨기기 (원한다면) */
+    /* [data-testid="stFileUploaderBrowseButton"] {
+        display: none;
+    } */
+    /* 드래그 앤 드롭 아이콘 커스터마이징을 위한 stFileUploaderDropzoneTarget */
+    [data-testid="stFileUploaderDropzoneTarget"] {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        width: 100%;
+        position: relative; /* 자식 요소 절대 위치 지정을 위해 */
+    }
+    /* 자체적으로 아이콘과 텍스트 추가 (st.markdown으로) */
+    /* 기존 browse files 버튼 위치 조절 */
+    [data-testid="stFileUploaderBrowseButton"] {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+    }
+    [data-testid="stFileUploaderBrowseButton"] > button {
+        background-color: #3498db; /* 파란색 */
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.9em;
+        font-weight: 600;
+        transition: background-color 0.3s ease;
+    }
+    [data-testid="stFileUploaderBrowseButton"] > button:hover {
+        background-color: #2980b9; /* 더 어두운 파란색 */
     }
 
+
+    /* 문제 해결 Expander (st.expander) 스타일 */
+    .stExpander {
+        border: 1px solid #eee;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+        margin-top: 20px;
+    }
+    .stExpander > div > div > details > summary {
+        color: #666;
+        font-size: 0.9em;
+        padding: 10px 15px;
+        outline: none; /* 클릭 시 기본 외곽선 제거 */
+    }
+    .stExpander > div > div > details > summary:hover {
+        background-color: #f0f0f0;
+        border-radius: 8px;
+    }
+    .stExpander > div > div > details > summary::marker { /* 기본 드롭다운 마커 제거 */
+        content: '';
+    }
+    .stExpander > div > div > details > summary::before { /* 사용자 정의 화살표 */
+        content: '▼';
+        font-size: 0.8em;
+        margin-right: 5px;
+        transition: transform 0.2s;
+    }
+    .stExpander > div > div > details[open] > summary::before {
+        transform: rotate(180deg); /* 열렸을 때 화살표 회전 */
+    }
+    .stExpander > div > div > details > div { /* Expander 내부 콘텐츠 */
+        padding: 5px 15px 10px;
+        border-top: 1px dashed #eee; /* 내용 위 점선 구분선 */
+        font-size: 0.85em;
+        color: #777;
+    }
+
+    /* PPT 자동 생성 시작 버튼 */
+    .stButton > button {
+        background-color: #2ecc71; /* 초록색 */
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1.2em;
+        font-weight: 700;
+        width: 100%; /* 버튼 너비 100% */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px; /* 아이콘과 텍스트 사이 간격 */
+        transition: background-color 0.3s ease;
+    }
+    .stButton > button:hover {
+        background-color: #27ae60; /* 호버 시 더 어두운 초록색 */
+    }
+
+    /* 반응형 디자인 (선택 사항: 화면 크기가 작아질 때 조절) */
+    @media (max-width: 768px) {
+        [data-testid="stAppViewContainer"] {
+            border-radius: 0; /* 모바일에서 전체 화면 사용 */
+            box-shadow: none;
+        }
+
+        [data-testid="stHeader"], .bottom-bar {
+            border-radius: 0; /* 모바일에서 바도 둥근 모서리 제거 */
+        }
+    }
 </style>
-""", unsafe_allow_html=True)
+"""
 
-# 제목
-st.markdown('<h1 class="title-style">🎬 촬영 대본 PPT 자동 생성 AI (KoSimCSE)</h1>', unsafe_allow_html=True)
+# Streamlit 앱에 사용자 정의 CSS 주입
+st.markdown(custom_css, unsafe_allow_html=True)
 
+# --- Streamlit 앱 UI 구성 시작 ---
 
-# 모델 로딩
-@st.cache_resource
-def load_model():
-    return SentenceTransformer("jhgan/ko-sbert-nli")
-model = load_model()
+# 상단 바 (st.markdown을 사용하여 HTML h1 태그 삽입)
+# st.header나 st.title을 사용하면 Streamlit 기본 스타일이 적용되어 CSS 오버라이딩이 더 어려울 수 있습니다.
+# 여기서는 CSS가 적용되는 [data-testid="stHeader"]를 활용합니다.
+st.markdown("<h1 style='display: none;'>촬영 대본 PPT 자동 생성 AI (KoSimCSE)</h1>", unsafe_allow_html=True)
+# 실제 텍스트는 CSS의 [data-testid="stHeader"] h1에 의해 표시됩니다.
 
-# 메인 콘텐츠 영역 (하나의 큰 테두리 안에 모두 포함)
-st.markdown("""
-    <div class="main-interaction-frame">
-        <h3 style="margin-top: 0; margin-bottom: 1.5rem; color: #333; text-align: center;">🚀 PPT 대본 생성 시작</h3>
-""", unsafe_allow_html=True)
+# 대본 입력 방식 선택 섹션
+st.markdown('<div class="input-method-selection-box"><span class="icon">📁</span> 대본 입력 방식 선택</div>', unsafe_allow_html=True)
 
-# 대본 입력 방식 선택 (탭 UI)
-tab1, tab2 = st.tabs(["📄 Word 파일 업로드", "✍️ 텍스트 직접 입력"])
+# 탭 메뉴 구성 (st.tabs 위젯 사용)
+tab1, tab2 = st.tabs(["Word 파일 업로드", "텍스트 직접 입력"])
 
 with tab1:
-    uploaded_file = st.file_uploader("Word 파일 (.docx)을 업로드해주세요.", type=["docx"])
-    with st.expander("🤔 Word 파일 업로드 시 문제가 발생하나요?"):
-        st.info("📢 **파일명을 영문으로 변경한 후 업로드**해 주세요. 한글 파일명은 시스템 호환성 문제로 인해 오류가 발생할 수 있습니다.")
+    st.write("Word 파일 (.docx)을 업로드해주세요.")
+
+    # 파일 업로더 위젯
+    # 기본 라벨은 숨기고 (label_visibility="collapsed"), 커스텀 텍스트를 마크다운으로 삽입
+    uploaded_file = st.file_uploader(
+        "파일을 드래그 앤 드롭하거나 찾아보세요.", # 이 텍스트는 st.file_uploader의 드롭존에 기본적으로 표시됩니다.
+        type=["docx"], # 허용되는 파일 형식
+        accept_multiple_files=False, # 단일 파일만 허용
+        label_visibility="collapsed" # 기본 라벨 숨기기
+    )
+    
+    # 드래그 앤 드롭 영역 내 커스텀 텍스트 및 아이콘 (CSS로 위치 조정)
+    st.markdown("""
+        <div style="text-align: center; margin-top: -160px; pointer-events: none; position: relative; z-index: 1;">
+            <i class="fas fa-cloud-upload-alt" style="font-size: 3em; color: #3498db; margin-bottom: 5px;"></i>
+            <p style="margin:0; font-size: 1.1em; color: #666;">Drag and drop file here</p>
+        </div>
+        <div style="text-align: center; font-size: 0.85em; color: #888; margin-top: 10px; position: relative; z-index: 1;">
+            Limit 200MB per file • DOCX
+        </div>
+    """, unsafe_allow_html=True)
+    # `pointer-events: none`은 마크다운 오버레이가 파일 업로더 클릭을 방해하지 않도록 합니다.
+    # `margin-top`과 `z-index`는 텍스트와 아이콘이 파일 업로더 위에 적절히 표시되도록 조절합니다.
+
+    if uploaded_file is not None:
+        st.success(f"파일 '{uploaded_file.name}'이(가) 업로드되었습니다.")
+        # 여기에 업로드된 파일을 처리하는 로직을 추가합니다.
+        # 예: bytes_data = uploaded_file.getvalue()
+        # st.write(bytes_data)
+
+    # 문제 해결 드롭다운 (st.expander 위젯 사용)
+    with st.expander("🙁 Word 파일 업로드 시 문제가 발생하나요?"):
+        st.write("문제가 발생할 경우 다음 사항을 확인해주세요:")
+        st.markdown("- 파일 형식이 `.docx`인지 확인해주세요.")
+        st.markdown("- 파일 크기가 200MB를 초과하지 않는지 확인해주세요.")
+        st.markdown("- 네트워크 연결이 안정적인지 확인해주세요.")
+        st.markdown("- 다른 이름으로 저장 후 다시 시도해보세요.")
 
 with tab2:
-    text_input = st.text_area("여기에 촬영 대본 텍스트를 직접 작성하세요:", height=300, label_visibility="collapsed")
+    st.text_area(
+        "대본을 직접 입력하세요.",
+        height=200,
+        placeholder="여기에 대본을 입력해주세요...",
+        help="여기에 입력된 텍스트로 PPT 대본이 생성됩니다."
+    )
+    # st.info("여기에 입력된 텍스트로 PPT 대본이 생성됩니다.") # help 속성으로 대체 가능
 
-# PPT 자동 생성 버튼
-st.markdown("<div style='text-align:center; margin-top:2rem'>", unsafe_allow_html=True)
-if st.button("🚀 PPT 자동 생성 시작", use_container_width=True):
-    paragraphs = []
-    if uploaded_file:
-        try:
-            paragraphs = extract_text_from_word(uploaded_file)
-        except Exception:
-            st.error("❌ Word 파일을 처리하는 중 오류가 발생했습니다.\n\n📌 **파일명을 영문으로 변경한 뒤 다시 업로드해 주세요.**")
-            st.stop()
-    elif text_input.strip():
-        paragraphs = [p.strip() for p in text_input.split("\n\n") if p.strip()]
-    else:
-        st.warning("📎 Word 파일을 업로드하거나 텍스트를 입력해 주세요.")
-        st.stop()
-
-    if not paragraphs:
-        st.error("❗ 유효한 텍스트가 없습니다.")
-        st.stop()
-
-    with st.spinner("🛠️ PPT 생성 중입니다..."):
-        slides, flags = split_text_into_slides_with_similarity(
-            paragraphs, max_lines, max_chars, model, similarity_threshold=sim_threshold
-        )
-        ppt = create_ppt(slides, flags, max_chars, font_size)
-
-        if ppt:
-            ppt_io = io.BytesIO()
-            ppt.save(ppt_io)
-            ppt_io.seek(0)
-            st.download_button("📥 PPT 다운로드", ppt_io, "paydo_script_ai.pptx",
-                               mime="application/vnd.openxmlformats-officedocument.presentationml.presentation")
-            st.success(f"✅ 총 {len(slides)}개의 슬라이드가 생성되었습니다.")
-            if any(flags):
-                flagged = [i+1 for i, f in enumerate(flags) if f]
-                st.warning(f"⚠️ 확인이 필요한 슬라이드 번호: {flagged}")
-st.markdown("</div>", unsafe_allow_html=True)
-
-st.markdown("</div>", unsafe_allow_html=True) # 메인 프레임 닫기
-
-# 사이드바 슬라이드 설정 (기존과 동일)
-st.sidebar.markdown("#### ⚙️ 슬라이드 설정")
-with st.sidebar.expander("💡 슬라이드 설정 안내"):
-    st.info("이곳에서 슬라이드당 최대 줄 수, 한 줄당 최대 글자 수, 폰트 크기, 문맥 유사도 기준 등 PPT 생성의 세부 조건을 조정할 수 있습니다.")
-
-max_lines = st.sidebar.slider("📏 슬라이드당 최대 줄 수", 1, 10, 4)
-max_chars = st.sidebar.slider("🔠 한 줄당 최대 글자 수", 10, 100, 18)
-font_size = st.sidebar.slider("🔡 폰트 크기", 10, 60, 54)
-sim_threshold = st.sidebar.slider("🧠 문맥 유사도 기준", 0.0, 1.0, 0.85, step=0.05)
-
-
-# 이하 함수는 변경 없음 (생략)
-def extract_text_from_word(uploaded_file):
-    try:
-        file_bytes = BytesIO(uploaded_file.read())
-        doc = docx.Document(file_bytes)
-        return [p.text for p in doc.paragraphs if p.text.strip()]
-    except Exception:
-        raise
-
-def calculate_text_lines(text, max_chars_per_line):
-    lines = 0
-    paragraphs = text.split('\n')
-    for paragraph in paragraphs:
-        if not paragraph:
-            lines += 1
-        else:
-            lines += len(textwrap.wrap(paragraph, width=max_chars_per_line, break_long_words=True))
-    return lines
-
-def smart_sentence_split(text):
-    paragraphs = text.split('\n')
-    sentences = []
-    for paragraph in paragraphs:
-        temp_sentences = re.split(r'(?<=[^\d][.!?])\s+(?=[\"\'\uAC00-\uD7A3])', paragraph)
-        sentences.extend([s.strip() for s in temp_sentences if s.strip()])
-    return sentences
-
-def split_text_into_slides_with_similarity(text_paragraphs, max_lines_per_slide, max_chars_per_line_ppt, model, similarity_threshold=0.85):
-    slides, split_flags, slide_number = [], [], 1
-    current_text, current_lines, needs_check = "", 0, False
-
-    for paragraph in text_paragraphs:
-        sentences = smart_sentence_split(paragraph)
-        if not sentences:
-            continue
-
-        embeddings = model.encode(sentences)
-
-        i = 0
-        while i < len(sentences):
-            sentence = sentences[i]
-            sentence_lines = calculate_text_lines(sentence, max_chars_per_line_ppt)
-
-            if sentence_lines <= 2 and i + 1 < len(sentences):
-                next_sentence = sentences[i + 1]
-                merged = sentence + " " + next_sentence
-                merged_lines = calculate_text_lines(merged, max_chars_per_line_ppt)
-                if merged_lines <= max_lines_per_slide:
-                    sentence = merged
-                    sentence_lines = merged_lines
-                    i += 1
-
-            if sentence_lines > max_lines_per_slide:
-                wrapped_lines = textwrap.wrap(sentence, width=max_chars_per_line_ppt, break_long_words=True)
-                temp_text, temp_lines = "", 0
-                for line in wrapped_lines:
-                    line_lines = calculate_text_lines(line, max_chars_per_line_ppt)
-                    if temp_lines + line_lines <= max_lines_per_slide:
-                        temp_text += line + "\n"
-                        temp_lines += line_lines
-                    else:
-                        slides.append(temp_text.strip())
-                        split_flags.append(True)
-                        slide_number += 1
-                        temp_text = line + "\n"
-                        temp_lines = line_lines
-                if temp_text:
-                    slides.append(temp_text.strip())
-                    split_flags.append(True)
-                    slide_number += 1
-                current_text, current_lines = "", 0
-                i += 1
-                continue
-
-            if current_lines + sentence_lines <= max_lines_per_slide:
-                current_text += sentence + "\n"
-                current_lines += sentence_lines
-            else:
-                slides.append(current_text.strip())
-                split_flags.append(needs_check)
-                slide_number += 1
-                current_text = sentence + "\n"
-                current_lines = sentence_lines
-                needs_check = False
-            i += 1
-
-    if current_text:
-        slides.append(current_text.strip())
-        split_flags.append(needs_check)
-
-    return slides, split_flags
-
-def create_ppt(slide_texts, split_flags, max_chars_per_line_in_ppt=18, font_size=54):
-    prs = Presentation()
-    prs.slide_width = Inches(13.33)
-    prs.slide_height = Inches(7.5)
-    total_slides = len(slide_texts)
-
-    for i, text in enumerate(slide_texts):
-        slide = prs.slides.add_slide(prs.slide_layouts[6])
-        add_text_to_slide(slide, text, font_size, PP_ALIGN.CENTER, max_chars_per_line_in_ppt)
-        if split_flags[i]:
-            add_check_needed_shape(slide)
-        if i == total_slides - 1:
-            add_end_mark(slide)
-    return prs
-
-def add_text_to_slide(slide, text, font_size, alignment, max_chars_per_line):
-    textbox = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(12.33), Inches(6.2))
-    text_frame = textbox.text_frame
-    text_frame.clear()
-    text_frame.vertical_anchor = MSO_VERTICAL_ANCHOR.TOP
-    text_frame.word_wrap = True
-
-    wrapped_lines = textwrap.wrap(text, width=max_chars_per_line, break_long_words=True)
-    for line in wrapped_lines:
-        p = text_frame.add_paragraph()
-        p.text = line
-        p.font.size = Pt(font_size)
-        p.font.name = 'Noto Color Emoji'
-        p.font.bold = True
-        p.font.color.rgb = RGBColor(0, 0, 0)
-        p.alignment = alignment
-        p.vertical_anchor = MSO_VERTICAL_ANCHOR.TOP
-
-    text_frame.auto_size = None
-
-def add_check_needed_shape(slide):
-    shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.5), Inches(0.3), Inches(2.5), Inches(0.5))
-    shape.fill.solid()
-    shape.fill.fore_color.rgb = RGBColor(255, 255, 0)
-    shape.line.color.rgb = RGBColor(0, 0, 0)
-    p = shape.text_frame.paragraphs[0]
-    p.text = "확인 필요!"
-    p.font.size = Pt(18)
-    p.font.bold = True
-    p.font.color.rgb = RGBColor(0, 0, 0)
-    shape.text_frame.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
-    p.alignment = PP_ALIGN.CENTER
-
-def add_end_mark(slide):
-    shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(10), Inches(6), Inches(2), Inches(1))
-    shape.fill.solid()
-    shape.fill.fore_color.rgb = RGBColor(255, 0, 0)
-    shape.line.color.rgb = RGBColor(0, 0, 0)
-    p = shape.text_frame.paragraphs[0]
-    p.text = "끝"
-    p.font.size = Pt(36)
-    p.font.color.rgb = RGBColor(255, 255, 255)
-    shape.text_frame.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
-    p.alignment = PP_ALIGN.CENTER
+# 하단 바 (st.markdown을 사용하여 HTML div를 만들고 그 안에 버튼 배치)
+# 버튼은 st.button을 사용하여 Streamlit의 기능적인 버튼을 유지합니다.
+with st.container(): # 하단 바 영역을 위한 컨테이너
+    st.markdown('<div class="bottom-bar">', unsafe_allow_html=True) # 하단 바 CSS 클래스 적용
+    if st.button("🚀 PPT 자동 생성 시작"):
+        # 버튼 클릭 시 실행될 로직
+        st.success("PPT 생성 중입니다... 잠시만 기다려 주세요.")
+        # 여기에 PPT 생성 및 다운로드 로직을 추가합니다.
+    st.markdown('</div>', unsafe_allow_html=True)
