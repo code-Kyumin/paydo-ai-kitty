@@ -16,7 +16,7 @@ st.set_page_config(page_title="촬영 대본 PPT 자동 생성 AI", layout="cent
 st.markdown("""
 <style>
     .block-container {
-        padding-top: 1rem;
+        padding-top: 0.5rem;
         padding-bottom: 1rem;
         font-family: 'Segoe UI', sans-serif;
     }
@@ -24,7 +24,7 @@ st.markdown("""
         font-size: 1.8rem;
         color: #222;
         font-weight: 600;
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem;
     }
     .section {
         background-color: #f9f9f9;
@@ -61,16 +61,20 @@ max_chars = st.sidebar.slider("🔠 한 줄당 최대 글자 수", 10, 100, 18)
 font_size = st.sidebar.slider("🔡 폰트 크기", 10, 60, 54)
 sim_threshold = st.sidebar.slider("🧠 문맥 유사도 기준", 0.0, 1.0, 0.85, step=0.05)
 
-# 입력 구역
+# 입력 구역 (전체 박스로 감쌈)
 st.markdown("""
 <div class="section">
     <h4 style='margin-bottom:0.8rem'>📤 Word 파일 업로드 또는 텍스트 직접 입력</h4>
+    <div>
 """, unsafe_allow_html=True)
 uploaded_file = st.file_uploader("📄 Word 파일 업로드 (.docx)", type=["docx"])
 st.markdown("<div style='margin-top: 0.5rem'></div>", unsafe_allow_html=True)
 st.markdown("✍️ 또는 아래 입력란에 직접 텍스트를 작성하세요:")
 text_input = st.text_area("", height=300)
-st.markdown("</div>", unsafe_allow_html=True)
+st.markdown("""
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 # 텍스트 처리 함수들
 def extract_text_from_word(uploaded_file):
