@@ -63,12 +63,16 @@ sim_threshold = st.sidebar.slider("🧠 문맥 유사도 기준", 0.0, 1.0, 0.85
 
 # 입력 구역 (테두리 감싸기만 적용)
 with st.container():
-    st.markdown("<div class='section'>", unsafe_allow_html=True)
-    st.markdown("#### 📤 Word 파일 업로드 또는 텍스트 직접 입력", unsafe_allow_html=True)
+    st.markdown("""
+        <div style="background-color: #f9f9f9; padding: 1.2rem; border: 1px solid #ddd; border-radius: 0.5rem; margin-bottom: 1rem">
+            <h4 style="margin-bottom: 1rem">📤 Word 파일 업로드 또는 텍스트 직접 입력</h4>
+    """, unsafe_allow_html=True)
+
     uploaded_file = st.file_uploader("📄 Word 파일 업로드 (.docx)", type=["docx"])
     st.markdown("✍️ 또는 아래 입력란에 직접 텍스트를 작성하세요:")
     text_input = st.text_area("텍스트 입력", height=300, label_visibility="collapsed")
-    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("""</div>""", unsafe_allow_html=True)
 
 # 이하 함수 및 실행 로직은 동일하게 유지
 
