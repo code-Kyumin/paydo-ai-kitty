@@ -45,6 +45,9 @@ custom_css = """
         position: relative; /* 사이드바와의 간격 조정을 위한 기준 */
         left: 0; /* 초기 위치 설정 */
         transition: margin-left 0.3s ease; /* 사이드바 열림/닫힘 시 부드러운 전환 */
+        
+        /* 고정된 하단 바 때문에 메인 컨테이너 하단에 패딩 추가 */
+        padding-bottom: 90px; /* 하단 고정 바의 높이(padding 15+15+버튼 높이 고려)에 맞춰 조절 */
     }
 
     /* 사이드바가 열렸을 때 메인 컨테이너를 오른쪽으로 이동 */
@@ -81,28 +84,24 @@ custom_css = """
         gap: 10px; /* 이모지와 텍스트 사이 간격 */
     }
 
-    /* 하단 디자인 BAR 스타일 (버튼 포함) */
-    .bottom-design-bar { 
-        background-color: #A2D9CE; /* 옅은 녹색으로 변경 (더 얇게 보이도록) */
-        color: #fff;
-        padding: 15px 20px; /* 패딩을 충분히 줘서 버튼과의 간격 확보 */
+    /* 고정된 하단 바 스타일 (새로 추가) */
+    .bottom-fixed-bar { 
+        background-color: #A2D9CE; /* 옅은 녹색으로 변경 */
+        padding: 15px 20px;
         text-align: center;
-        border-bottom-left-radius: 8px;
-        border-bottom-right-radius: 8px;
         box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
-        /* block-container의 기본 패딩을 덮기 위해 음수 마진 사용 */
-        margin-left: -1rem;
-        margin-right: -1rem;
-        width: calc(100% + 2rem);
-        position: sticky; /* 스크롤 시 하단에 고정 */
+        position: fixed; /* 뷰포트 하단에 고정 */
         bottom: 0; /* 하단에 붙임 */
-        z-index: 999;
-        /* 이 div 자체는 flex 컨테이너로 설정하여 내부 요소 (stButton)를 정렬 */
-        display: flex; 
-        justify-content: center; /* 내부 요소를 중앙에 정렬 */
+        left: 0; /* 좌측 끝에 붙임 */
+        width: 100%; /* 너비 100% */
+        z-index: 1000; /* 다른 요소 위에 표시되도록 가장 높은 z-index 부여 */
+        display: flex; /* 내부 버튼을 중앙 정렬하기 위한 flexbox */
+        justify-content: center; /* 버튼을 중앙에 정렬 */
         align-items: center;
+        /* 메인 컨테이너의 max-width에 맞춰 중앙 정렬되도록 */
+        box-sizing: border-box; /* padding이 width에 포함되도록 */
     }
-    
+
     /* 대본 입력 방식 선택 섹션 */
     .input-method-selection-box {
         background-color: #e0f2f7; /* 연한 파란색 배경 */
@@ -221,14 +220,14 @@ custom_css = """
     }
 
     /* PPT 자동 생성 시작 버튼을 감싸는 Streamlit div에 Flexbox 적용 */
-    .bottom-design-bar .stButton { 
-        width: 100%; /* 부모 (bottom-design-bar) 내에서 100% 너비 차지 */
+    .bottom-fixed-bar .stButton { /* 새로 만든 고정 바 안에 있는 stButton */
+        width: auto; /* 부모 flex 컨테이너 내에서 콘텐츠 크기에 맞게 너비 조절 */
         display: flex; /* 내부 버튼을 가운데 정렬하기 위해 flexbox 적용 */
         justify-content: center; /* 이 stButton 내부의 실제 버튼을 가운데 정렬 */
     }
     
     /* 실제 PPT 자동 생성 시작 버튼 스타일 */
-    .bottom-design-bar .stButton > button { 
+    .bottom-fixed-bar .stButton > button { 
         background-color: orangered; /* 눈에 띄는 색상 (오렌지-레드) */
         color: white;
         border: none;
@@ -245,7 +244,7 @@ custom_css = """
         gap: 10px;
         transition: background-color 0.3s ease;
     }
-    .bottom-design-bar .stButton > button:hover {
+    .bottom-fixed-bar .stButton > button:hover {
         background-color: #CC4000; /* 호버 색상 */
     }
 
@@ -290,11 +289,12 @@ custom_css = """
             border-radius: 0; /* 모바일에서는 모서리 둥글게 처리 제거 */
             box-shadow: none; /* 모바일에서는 그림자 제거 */
             margin-left: 0 !important; /* 모바일에서는 마진 제거 */
+            padding-bottom: 90px; /* 모바일에서도 하단 고정 바 패딩 유지 */
         }
-        .top-design-bar, .bottom-design-bar {
+        .top-design-bar, .bottom-fixed-bar {
             border-radius: 0;
         }
-        .bottom-design-bar .stButton > button {
+        .bottom-fixed-bar .stButton > button {
              width: auto; /* 모바일에서도 너비 자동 조절 */
              max-width: none; /* 모바일에서는 최대 너비 제한 해제 */
         }
@@ -524,10 +524,9 @@ with tab2:
         help="여기에 입력된 텍스트로 PPT 대본이 생성됩니다."
     )
 
-# 하단 디자인 BAR (버튼 포함)
+# 고정된 하단 바 (새롭게 추가)
 with st.container():
-    st.markdown('<div class="bottom-design-bar">', unsafe_allow_html=True) 
-    # PPT 자동 생성 시작 버튼을 bottom-design-bar 내부로 이동
+    st.markdown('<div class="bottom-fixed-bar">', unsafe_allow_html=True) 
     if st.button("🚀 PPT 자동 생성 시작"):
         paragraphs = []
         target_file = None
