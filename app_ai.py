@@ -50,10 +50,6 @@ custom_css = """
     }
 
     /* 사이드바가 열렸을 때 메인 컨테이너를 오른쪽으로 이동 */
-    /* Streamlit의 기본 동작을 오버라이드하기 때문에 데이터셋 ID 확인 필요 */
-    /* stSidebarV2는 최신 Streamlit 버전의 사이드바 컨테이너 (실제 DOM 구조 확인 필요) */
-    /* 이 CSS는 JavaScript로 사이드바의 열림/닫힘 상태를 감지하고 body 클래스를 추가하는 방식으로 동작할 가능성이 높습니다.
-       여기서는 Streamlit의 내부 구조를 추측하여 적용합니다. */
     /* Streamlit 1.29.0 이상에서 사이드바가 열리면 body에 .st-sidebar-open 클래스가 추가됩니다. */
     body.st-sidebar-open [data-testid="stAppViewContainer"] {
         margin-left: 210px; /* 사이드바 너비만큼 메인 콘텐츠를 오른쪽으로 밀어냅니다. */
@@ -477,8 +473,8 @@ with st.container():
 st.markdown('<div class="input-method-selection-box"><span class="icon">📁</span> 대본 입력 방식 선택</div>', unsafe_allow_html=True)
 
 # 탭 메뉴 구성 (st.tabs 위젯 사용)
-# 탭 이름에 Font Awesome 아이콘 사용 (워드 아이콘)
-tab1, tab2 = st.tabs(["<i class='fas fa-file-word'></i> Word 파일 업로드", "📝 텍스트 직접 입력"])
+# '블루 북' 이모지 적용
+tab1, tab2 = st.tabs(["📘 Word 파일 업로드", "📝 텍스트 직접 입력"])
 
 uploaded_file_tab1 = None 
 text_input_tab2 = ""
