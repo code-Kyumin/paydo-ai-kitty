@@ -19,9 +19,6 @@ st.markdown("""
             padding-top: 2rem;
             padding-bottom: 2rem;
         }
-        .stSlider > div {
-            padding-top: 1rem;
-        }
         .title-style {
             font-size: 2.2rem;
             font-weight: 800;
@@ -33,7 +30,7 @@ st.markdown("""
 # 타이틀
 st.markdown('<h1 class="title-style">🎬 촬영 대본 PPT 자동 생성 AI (KoSimCSE)</h1>', unsafe_allow_html=True)
 
-# 사전 안내 문구
+# 안내 문구
 st.info("📢 Word 파일 업로드 시 오류가 발생한다면, **파일명을 반드시 영문으로 변경한 후 업로드**해 주세요. 한글 파일명은 시스템 호환성 문제로 오류가 날 수 있습니다.")
 
 # 모델 로딩
@@ -193,23 +190,21 @@ def add_end_mark(slide):
     shape.text_frame.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
     p.alignment = PP_ALIGN.CENTER
 
-# 입력 UI 구성
-col1, col2 = st.columns([1.2, 1])
+# 사이드바 슬라이드 설정
+st.sidebar.markdown("## ⚙️ 슬라이드 설정")
+max_lines = st.sidebar.slider("📏 슬라이드당 최대 줄 수", 1, 10, 4)
+max_chars = st.sidebar.slider("🔠 한 줄당 최대 글자 수", 10, 100, 18)
+font_size = st.sidebar.slider("🔡 폰트 크기", 10, 60, 54)
+sim_threshold = st.sidebar.slider("🧠 문맥 유사도 기준", 0.0, 1.0, 0.85, step=0.05)
 
-with col1:
-    st.markdown("#### 📤 Word 파일 업로드 또는 텍스트 직접 입력", unsafe_allow_html=True)
-    uploaded_file = st.file_uploader("📄 Word 파일 업로드 (.docx)", type=["docx"])
-    st.markdown("##### ✍️ 또는 아래 입력란에 직접 텍스트를 작성하세요:")
-    text_input = st.text_area("", height=300)
+# 입력 UI
+st.markdown("#### 📤 Word 파일 업로드 또는 텍스트 직접 입력", unsafe_allow_html=True)
+uploaded_file = st.file_uploader("📄 Word 파일 업로드 (.docx)", type=["docx"])
 
-with col2:
-    st.markdown("#### ⚙️ 슬라이드 설정", unsafe_allow_html=True)
-    max_lines = st.slider("📏 슬라이드당 최대 줄 수", 1, 10, 4)
-    max_chars = st.slider("🔠 한 줄당 최대 글자 수", 10, 100, 18)
-    font_size = st.slider("🔡 폰트 크기", 10, 60, 54)
-    sim_threshold = st.slider("🧠 문맥 유사도 기준", 0.0, 1.0, 0.85, step=0.05)
+st.markdown("##### ✍️ 또는 아래 입력란에 직접 텍스트를 작성하세요:")
+text_input = st.text_area("", height=300)
 
-# 버튼 및 결과
+# 실행 버튼
 st.markdown("<div style='text-align:center; margin-top:2rem'>", unsafe_allow_html=True)
 if st.button("🚀 PPT 자동 생성 시작", use_container_width=True):
     paragraphs = []
