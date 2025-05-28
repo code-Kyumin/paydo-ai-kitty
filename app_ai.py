@@ -15,6 +15,7 @@ from sentence_transformers import SentenceTransformer, util
 
 # Streamlit 세팅
 st.set_page_config(page_title="Paydo AI PPT", layout="centered")
+# st.title("🎬 AI PPT 생성기 (KoSimCSE)") # 이 부분 제거
 
 # CSS 스타일 정의
 custom_css = """
@@ -505,7 +506,7 @@ with tab1:
     """, unsafe_allow_html=True)
 
     if uploaded_file_tab1 is not None:
-        st.success(f"파일 '{uploaded_file.name}'이(가) 업로드되었습니다.")
+        st.success(f"파일 '{uploaded_file_tab1.name}'이(가) 업로드되었습니다.")
 
     # 문제 해결 드롭다운 (st.expander 위젯 사용)
     with st.expander("🙁 Word 파일 업로드 시 문제가 발생하나요?"):
@@ -526,6 +527,7 @@ with tab2:
 # 하단 디자인 BAR (버튼 포함)
 with st.container():
     st.markdown('<div class="bottom-design-bar">', unsafe_allow_html=True) 
+    # PPT 자동 생성 시작 버튼을 bottom-design-bar 내부로 이동
     if st.button("🚀 PPT 자동 생성 시작"):
         paragraphs = []
         target_file = None
