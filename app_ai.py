@@ -35,7 +35,7 @@ custom_css = """
 
     /* Streamlit 메인 컨테이너 폭 조절 및 그림자, 모서리 둥글게 */
     [data-testid="stAppViewContainer"] {
-        max-width: 900px; /* 컨테이너 최대 너비 증가 */
+        max-width: 1000px; /* 컨테이너 최대 너비 더 증가 (900px -> 1000px) */
         margin: auto; /* 페이지 중앙 정렬 */
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* 그림자 효과 */
         border-radius: 8px; /* 모서리 둥글게 */
@@ -71,7 +71,7 @@ custom_css = """
     .top-design-bar h1 {
         color: #fff; /* 제목 텍스트 색상 흰색 */
         margin: 0;
-        font-size: 0.7em; /* 제목 글자 크기 조정 (더 작게 0.7em) */
+        font-size: 0.7em; /* 제목 글자 크기 조정 (0.7em) */
         font-weight: 700;
         text-align: center; /* 가운데 정렬 */
         display: flex; /* flexbox 사용 (이모지와 텍스트 정렬) */
@@ -81,7 +81,7 @@ custom_css = """
     }
 
     /* 하단 디자인 BAR 스타일 (버튼 포함) */
-    .bottom-design-bar { /* 클래스 이름을 'bottom-bar'에서 'bottom-design-bar'로 변경 */
+    .bottom-design-bar { 
         background-color: #A2D9CE; /* 옅은 녹색으로 변경 (더 얇게 보이도록) */
         color: #fff;
         padding: 15px 20px; /* 패딩을 충분히 줘서 버튼과의 간격 확보 */
@@ -96,9 +96,9 @@ custom_css = """
         position: sticky; /* 스크롤 시 하단에 고정 */
         bottom: 0; /* 하단에 붙임 */
         z-index: 999;
-        /* 버튼을 가운데 정렬하기 위한 flexbox 속성 추가 */
+        /* 이 div 자체는 flex 컨테이너로 설정하여 내부 요소 (stButton)를 정렬 */
         display: flex; 
-        justify-content: center; 
+        justify-content: center; /* 내부 요소를 중앙에 정렬 */
         align-items: center;
     }
     
@@ -219,7 +219,14 @@ custom_css = """
         color: #777;
     }
 
-    /* PPT 자동 생성 시작 버튼 (하단 바 내에 포함) */
+    /* PPT 자동 생성 시작 버튼을 감싸는 Streamlit div에 Flexbox 적용 */
+    .bottom-design-bar .stButton { 
+        width: 100%; /* 부모 (bottom-design-bar) 내에서 100% 너비 차지 */
+        display: flex; /* 내부 버튼을 가운데 정렬하기 위해 flexbox 적용 */
+        justify-content: center; /* 이 stButton 내부의 실제 버튼을 가운데 정렬 */
+    }
+    
+    /* 실제 PPT 자동 생성 시작 버튼 스타일 */
     .bottom-design-bar .stButton > button { 
         background-color: orangered; /* 눈에 띄는 색상 (오렌지-레드) */
         color: white;
@@ -229,9 +236,8 @@ custom_css = """
         cursor: pointer;
         font-size: 1.3em; /* 폰트 크기 키우기 */
         font-weight: 700;
-        width: 100%; /* 부모 flex 컨테이너 내에서 100% 너비 */
+        width: auto; /* 버튼 콘텐츠 크기에 맞게 너비 조절 */
         max-width: 400px; /* 최대 너비 제한 (너무 길어지는 것을 방지) */
-        /* margin: 0px auto; 를 제거하고 flexbox의 justify-content로 가운데 정렬 */
         display: flex; /* flexbox 사용 */
         align-items: center;
         justify-content: center;
@@ -288,7 +294,7 @@ custom_css = """
             border-radius: 0;
         }
         .bottom-design-bar .stButton > button {
-             width: calc(100% - 40px); /* 모바일에서도 패딩 고려하여 너비 조정 */
+             width: auto; /* 모바일에서도 너비 자동 조절 */
              max-width: none; /* 모바일에서는 최대 너비 제한 해제 */
         }
     }
@@ -499,7 +505,7 @@ with tab1:
     """, unsafe_allow_html=True)
 
     if uploaded_file_tab1 is not None:
-        st.success(f"파일 '{uploaded_file_tab1.name}'이(가) 업로드되었습니다.")
+        st.success(f"파일 '{uploaded_file.name}'이(가) 업로드되었습니다.")
 
     # 문제 해결 드롭다운 (st.expander 위젯 사용)
     with st.expander("🙁 Word 파일 업로드 시 문제가 발생하나요?"):
