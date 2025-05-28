@@ -36,17 +36,51 @@ st.markdown("""
     .stSlider > div {
         padding-top: 0.5rem;
     }
+    .stButton > button {
+        background-color: #4CAF50; /* Green */
+        color: white;
+        padding: 10px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s ease;
+    }
+    .stButton > button:hover {
+        background-color: #45a049;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    }
+    /* Expander 헤더 스타일 */
+    .stExpander .stExpanderDetails {
+        background-color: #f0f2f6; /* 연한 회색 배경 */
+        border-radius: 0.5rem;
+        padding: 1rem;
+        border: 1px solid #e0e0e0;
+    }
+    .stTabs [data-baseweb="tab-list"] button {
+        background-color: #e0e0e0; /* 비활성 탭 배경 */
+        color: #555;
+        border-radius: 0.5rem 0.5rem 0 0;
+        padding: 0.8rem 1.2rem;
+        margin-right: 0.2rem;
+        font-weight: 600;
+    }
+    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] {
+        background-color: #ffffff; /* 활성 탭 배경 */
+        color: #222;
+        border-bottom: 2px solid #4CAF50; /* 활성 탭 하단 강조 */
+    }
+    .stTabs [data-baseweb="tab"] {
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+
 </style>
 """, unsafe_allow_html=True)
 
-# 제목 및 안내
+# 제목
 st.markdown('<h1 class="title-style">🎬 촬영 대본 PPT 자동 생성 AI (KoSimCSE)</h1>', unsafe_allow_html=True)
-st.markdown("""
-<div class="section">
-    📢 Word 파일 업로드 오류 시, **파일명을 영문으로 변경한 후 업로드**해 주세요. 
-    한글 파일명은 시스템 호환성 문제로 인해 오류가 발생할 수 있습니다.
-</div>
-""", unsafe_allow_html=True)
 
 # 모델 로딩
 @st.cache_resource
@@ -54,25 +88,33 @@ def load_model():
     return SentenceTransformer("jhgan/ko-sbert-nli")
 model = load_model()
 
+# 메인 콘텐츠 영역 (업로드, 텍스트 입력, PPT 생성 버튼)
+st.markdown("""
+    <div style="background-color: #ffffff; padding: 1.5rem; border: 1px solid #ddd; border-radius: 0.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 8px rgba(0,0,0,0.05);">
+        <h3 style="margin-top: 0; margin-bottom: 1rem; color: #333;">📤 대본 입력 방식 선택</h3>
+""", unsafe_allow_html=True)
+
+tab1, tab2 = st.tabs(["📄 Word 파일 업로드", "✍️ 텍스트 직접 입력"])
+
+with tab1:
+    uploaded_file = st.file_uploader("Word 파일 (.docx)을 업로드해주세요.", type=["docx"])
+    with st.expander("🤔 Word 파일 업로드 시 문제가 발생하나요?"):
+        st.info("📢 **파일명을 영문으로 변경한 후 업로드**해 주세요. 한글 파일명은 시스템 호환성 문제로 인해 오류가 발생할 수 있습니다.")
+
+with tab2:
+    text_input = st.text_area("여기에 촬영 대본 텍스트를 직접 작성하세요:", height=300, label_visibility="collapsed")
+
+st.markdown("</div>", unsafe_allow_html=True)
+
 # 사이드바 슬라이드 설정
 st.sidebar.markdown("#### ⚙️ 슬라이드 설정")
+with st.sidebar.expander("💡 슬라이드 설정 안내"):
+    st.info("이곳에서 슬라이드당 최대 줄 수, 한 줄당 최대 글자 수, 폰트 크기, 문맥 유사도 기준 등 PPT 생성의 세부 조건을 조정할 수 있습니다.")
+
 max_lines = st.sidebar.slider("📏 슬라이드당 최대 줄 수", 1, 10, 4)
 max_chars = st.sidebar.slider("🔠 한 줄당 최대 글자 수", 10, 100, 18)
 font_size = st.sidebar.slider("🔡 폰트 크기", 10, 60, 54)
 sim_threshold = st.sidebar.slider("🧠 문맥 유사도 기준", 0.0, 1.0, 0.85, step=0.05)
-
-# 입력 구역 (테두리 감싸기만 적용)
-with st.container():
-    st.markdown("""
-        <div style="background-color: #f9f9f9; padding: 1.2rem; border: 1px solid #ddd; border-radius: 0.5rem; margin-bottom: 1rem">
-            <h4 style="margin-bottom: 1rem">📤 Word 파일 업로드 또는 텍스트 직접 입력</h4>
-    """, unsafe_allow_html=True)
-
-    uploaded_file = st.file_uploader("📄 Word 파일 업로드 (.docx)", type=["docx"])
-    st.markdown("✍️ 또는 아래 입력란에 직접 텍스트를 작성하세요:")
-    text_input = st.text_area("텍스트 입력", height=300, label_visibility="collapsed")
-
-    st.markdown("""</div>""", unsafe_allow_html=True)
 
 # 이하 함수 및 실행 로직은 동일하게 유지
 
