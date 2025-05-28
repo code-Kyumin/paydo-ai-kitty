@@ -1,5 +1,3 @@
-# Paydo AI PPT 생성기 with KoSimCSE 적용 및 오류 수정
-
 import streamlit as st
 from pptx import Presentation
 from pptx.util import Inches, Pt
@@ -11,30 +9,47 @@ import re
 import textwrap
 import docx
 from io import BytesIO
-from sentence_transformers import SentenceTransformer, util
+from sentence_transformers import SentenceTransformer
 
-# Streamlit 세팅
-st.set_page_config(page_title="Paydo AI PPT", layout="centered")
-st.title("🎬 AI PPT 생성기 (KoSimCSE)")
+# 스타일 삽입
+st.set_page_config(page_title="촬영 대본 PPT 자동 생성 AI", layout="centered")
+st.markdown("""
+    <style>
+        .block-container {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        .stSlider > div {
+            padding-top: 1rem;
+        }
+        .title-style {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #333;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
-# 모델 로딩 (한 번만)
+# 타이틀
+st.markdown('<h1 class="title-style">🎬 촬영 대본 PPT 자동 생성 AI (KoSimCSE)</h1>', unsafe_allow_html=True)
+
+# 사전 안내 문구
+st.info("📢 Word 파일 업로드 시 오류가 발생한다면, **파일명을 반드시 영문으로 변경한 후 업로드**해 주세요. 한글 파일명은 시스템 호환성 문제로 오류가 날 수 있습니다.")
+
+# 모델 로딩
 @st.cache_resource
 def load_model():
     return SentenceTransformer("jhgan/ko-sbert-nli")
-
 model = load_model()
 
-# Word 파일 텍스트 추출
 def extract_text_from_word(uploaded_file):
     try:
         file_bytes = BytesIO(uploaded_file.read())
         doc = docx.Document(file_bytes)
         return [p.text for p in doc.paragraphs if p.text.strip()]
-    except Exception as e:
-        st.error(f"Word 파일 처리 오류: {e}")
-        return None
+    except Exception:
+        raise
 
-# 텍스트 줄 수 계산
 def calculate_text_lines(text, max_chars_per_line):
     lines = 0
     paragraphs = text.split('\n')
@@ -45,17 +60,14 @@ def calculate_text_lines(text, max_chars_per_line):
             lines += len(textwrap.wrap(paragraph, width=max_chars_per_line, break_long_words=True))
     return lines
 
-# 문장 분할
 def smart_sentence_split(text):
     paragraphs = text.split('\n')
     sentences = []
     for paragraph in paragraphs:
-        # 서술어 단독 분리 방지를 위해 문장 끝 마침표 기준이 아닌, 약간 넓게 split
         temp_sentences = re.split(r'(?<=[^\d][.!?])\s+(?=[\"\'\uAC00-\uD7A3])', paragraph)
         sentences.extend([s.strip() for s in temp_sentences if s.strip()])
     return sentences
 
-# 슬라이드 분할 with 유사도 + 짧은 문장 병합 개선
 def split_text_into_slides_with_similarity(text_paragraphs, max_lines_per_slide, max_chars_per_line_ppt, model, similarity_threshold=0.85):
     slides, split_flags, slide_number = [], [], 1
     current_text, current_lines, needs_check = "", 0, False
@@ -72,7 +84,6 @@ def split_text_into_slides_with_similarity(text_paragraphs, max_lines_per_slide,
             sentence = sentences[i]
             sentence_lines = calculate_text_lines(sentence, max_chars_per_line_ppt)
 
-            # 다음 문장과 병합을 시도 (너무 짧은 문장 방지)
             if sentence_lines <= 2 and i + 1 < len(sentences):
                 next_sentence = sentences[i + 1]
                 merged = sentence + " " + next_sentence
@@ -80,7 +91,7 @@ def split_text_into_slides_with_similarity(text_paragraphs, max_lines_per_slide,
                 if merged_lines <= max_lines_per_slide:
                     sentence = merged
                     sentence_lines = merged_lines
-                    i += 1  # 추가로 하나 더 소비
+                    i += 1
 
             if sentence_lines > max_lines_per_slide:
                 wrapped_lines = textwrap.wrap(sentence, width=max_chars_per_line_ppt, break_long_words=True)
@@ -121,6 +132,7 @@ def split_text_into_slides_with_similarity(text_paragraphs, max_lines_per_slide,
         split_flags.append(needs_check)
 
     return slides, split_flags
+
 def create_ppt(slide_texts, split_flags, max_chars_per_line_in_ppt=18, font_size=54):
     prs = Presentation()
     prs.slide_width = Inches(13.33)
@@ -181,34 +193,43 @@ def add_end_mark(slide):
     shape.text_frame.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
     p.alignment = PP_ALIGN.CENTER
 
+# 입력 UI 구성
+col1, col2 = st.columns([1.2, 1])
 
-# PPT 생성 함수 (이하 동일)
-# [생략된 함수들은 기존과 동일하게 유지됩니다]
+with col1:
+    st.markdown("#### 📤 Word 파일 업로드 또는 텍스트 직접 입력", unsafe_allow_html=True)
+    uploaded_file = st.file_uploader("📄 Word 파일 업로드 (.docx)", type=["docx"])
+    st.markdown("##### ✍️ 또는 아래 입력란에 직접 텍스트를 작성하세요:")
+    text_input = st.text_area("", height=300)
 
-# UI 입력
-uploaded_file = st.file_uploader("📄 Word 파일 업로드", type=["docx"])
-text_input = st.text_area("또는 텍스트 직접 입력:", height=300)
+with col2:
+    st.markdown("#### ⚙️ 슬라이드 설정", unsafe_allow_html=True)
+    max_lines = st.slider("📏 슬라이드당 최대 줄 수", 1, 10, 4)
+    max_chars = st.slider("🔠 한 줄당 최대 글자 수", 10, 100, 18)
+    font_size = st.slider("🔡 폰트 크기", 10, 60, 54)
+    sim_threshold = st.slider("🧠 문맥 유사도 기준", 0.0, 1.0, 0.85, step=0.05)
 
-max_lines = st.slider("슬라이드당 최대 줄 수", 1, 10, 4)  # 기본값을 4로 수정
-max_chars = st.slider("한 줄당 최대 글자 수", 10, 100, 18)
-font_size = st.slider("폰트 크기", 10, 60, 54)
-sim_threshold = st.slider("문맥 유사도 기준", 0.0, 1.0, 0.85, step=0.05)
-
-if st.button("🚀 PPT 생성"):
+# 버튼 및 결과
+st.markdown("<div style='text-align:center; margin-top:2rem'>", unsafe_allow_html=True)
+if st.button("🚀 PPT 자동 생성 시작", use_container_width=True):
     paragraphs = []
     if uploaded_file:
-        paragraphs = extract_text_from_word(uploaded_file)
+        try:
+            paragraphs = extract_text_from_word(uploaded_file)
+        except Exception:
+            st.error("❌ Word 파일을 처리하는 중 오류가 발생했습니다.\n\n📌 **파일명을 영문으로 변경한 뒤 다시 업로드해 주세요.**")
+            st.stop()
     elif text_input.strip():
         paragraphs = [p.strip() for p in text_input.split("\n\n") if p.strip()]
     else:
-        st.warning("Word 파일을 업로드하거나 텍스트를 입력하세요.")
+        st.warning("📎 Word 파일을 업로드하거나 텍스트를 입력해 주세요.")
         st.stop()
 
     if not paragraphs:
-        st.error("유효한 텍스트가 없습니다.")
+        st.error("❗ 유효한 텍스트가 없습니다.")
         st.stop()
 
-    with st.spinner("PPT 생성 중..."):
+    with st.spinner("🛠️ PPT 생성 중입니다..."):
         slides, flags = split_text_into_slides_with_similarity(
             paragraphs, max_lines, max_chars, model, similarity_threshold=sim_threshold
         )
@@ -220,7 +241,8 @@ if st.button("🚀 PPT 생성"):
             ppt_io.seek(0)
             st.download_button("📥 PPT 다운로드", ppt_io, "paydo_script_ai.pptx",
                                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation")
-            st.success(f"총 {len(slides)}개의 슬라이드가 생성되었습니다.")
+            st.success(f"✅ 총 {len(slides)}개의 슬라이드가 생성되었습니다.")
             if any(flags):
                 flagged = [i+1 for i, f in enumerate(flags) if f]
-                st.warning(f"⚠️ 확인이 필요한 슬라이드: {flagged}")
+                st.warning(f"⚠️ 확인이 필요한 슬라이드 번호: {flagged}")
+st.markdown("</div>", unsafe_allow_html=True)
