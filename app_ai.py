@@ -22,7 +22,6 @@ custom_css = """
 <style>
     /* 기본 폰트 설정 (Google Noto Sans KR 폰트 임포트) */
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
-    
     /* Font Awesome 아이콘 라이브러리 임포트 */
     @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
 
@@ -50,10 +49,8 @@ custom_css = """
     }
 
     /* 사이드바가 열렸을 때 메인 컨테이너를 오른쪽으로 이동 */
-    /* Streamlit 1.29.0 이상에서 사이드바가 열리면 body에 .st-sidebar-open 클래스가 추가됩니다. */
     body.st-sidebar-open [data-testid="stAppViewContainer"] {
         margin-left: 210px; /* 사이드바 너비만큼 메인 콘텐츠를 오른쪽으로 밀어냅니다. */
-        /* 이 값은 사이드바 너비와 맞춰야 합니다. */
     }
 
     /* 상단 디자인 BAR 스타일 */
@@ -73,7 +70,7 @@ custom_css = """
     .top-design-bar h1 {
         color: #fff; /* 제목 텍스트 색상 흰색 */
         margin: 0;
-        font-size: 0.9em; /* 제목 글자 크기 더 작게 조정 (한 줄로 표시) */
+        font-size: 1.2em; /* 제목 글자 크기 더 크게 조정 */
         font-weight: 700;
         text-align: center; /* 가운데 정렬 */
         display: flex; /* flexbox 사용 (이모지와 텍스트 정렬) */
@@ -228,7 +225,7 @@ custom_css = """
         cursor: pointer;
         font-size: 1.3em; /* 폰트 크기 키우기 */
         font-weight: 700;
-        width: calc(100% - 20px); /* 버튼 너비 조정 */
+        width: calc(100% - 40px); /* 좌우 패딩 고려하여 너비 조정 */
         margin: 15px auto; /* 버튼 위 간격 띄우고 가운데 정렬 */
         display: flex; /* flexbox 사용 */
         align-items: center;
@@ -261,7 +258,6 @@ custom_css = """
         margin-bottom: 0.2em; /* 라벨 아래 여백 */
     }
     /* 사이드바 햄버거 메뉴 아이콘 버튼 위치 조절 (더 정확한 셀렉터) */
-    /* Streamlit 버전에 따라 data-testid가 변경될 수 있습니다. */
     [data-testid="stHeader"] button[aria-label="메뉴"] { /* stHeader 내의 메뉴 버튼 */
         margin-top: 50px !important; /* 이 값을 조정하여 햄버거 메뉴 아이콘 위치를 조절 */
     }
@@ -287,8 +283,8 @@ custom_css = """
             border-radius: 0;
         }
         .bottom-design-bar .stButton > button {
-             width: 100%; /* 모바일에서는 버튼 너비 100% */
-             margin: 15px 0; /* 좌우 마진 제거 */
+             width: calc(100% - 20px); /* 모바일에서는 버튼 너비 100% (패딩 고려) */
+             margin: 15px auto; /* 좌우 마진 제거 */
         }
     }
 </style>
@@ -408,7 +404,7 @@ def add_text_to_slide(slide, text, font_size, alignment, max_chars_per_line):
         p = text_frame.add_paragraph()
         p.text = line
         p.font.size = Pt(font_size)
-        p.font.name = 'Noto Color Emoji'
+        p.font.name = 'Noto Color Emoji' # Noto Sans KR 폰트 추가 설치 필요 시 고려
         p.font.bold = True
         p.font.color.rgb = RGBColor(0, 0, 0)
         p.alignment = alignment
@@ -465,7 +461,7 @@ with st.sidebar:
 # 상단 디자인 BAR
 with st.container():
     st.markdown('<div class="top-design-bar">', unsafe_allow_html=True)
-    # 제목 텍스트 크기 더 작게 및 가운데 정렬
+    # 제목 텍스트 크기 및 가운데 정렬
     st.markdown("<h1>🎬 촬영 대본 PPT 자동 생성 AI (KoSimCSE)</h1>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -527,15 +523,9 @@ with st.container():
         target_text_input = ""
 
         if uploaded_file_tab1 is not None:
-            target_file = uploaded_file_tab1
-        
-        if text_input_tab2.strip():
-            target_text_input = text_input_tab2
-
-        if target_file:
-            paragraphs = extract_text_from_word(target_file)
-        elif target_text_input:
-            paragraphs = [p.strip() for p in target_text_input.split("\n\n") if p.strip()]
+            paragraphs = extract_text_from_word(uploaded_file_tab1)
+        elif text_input_tab2.strip():
+            paragraphs = [p.strip() for p in text_input_tab2.split("\n\n") if p.strip()]
         else:
             st.warning("PPT 생성을 위해 Word 파일을 업로드하거나 대본을 직접 입력해주세요.")
             st.stop()
