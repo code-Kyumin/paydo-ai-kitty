@@ -14,7 +14,8 @@ from io import BytesIO
 from sentence_transformers import SentenceTransformer, util
 
 # Streamlit 세팅
-# 레이아웃을 "wide"로 변경하여 사이드바가 브라우저 좌측에 고정되도록 합니다.
+# 레이아웃을 "wide"로 변경하여 메인 콘텐츠 영역을 유연하게 만듭니다.
+# 실제 콘텐츠의 너비는 CSS로 제어합니다.
 st.set_page_config(page_title="Paydo AI PPT", layout="wide")
 
 # CSS 스타일 정의
@@ -35,15 +36,23 @@ custom_css = """
         color: #333; /* 기본 텍스트 색상 */
     }
 
-    /* Streamlit 메인 컨테이너 폭 조절 및 그림자, 모서리 둥글게 */
-    /* layout="wide" 일 때 max-width를 조정하려면 stAppViewContainer를 사용하지 않습니다. */
-    /* 대신 stApp의 padding-left를 조정하고, 실제 콘텐츠를 담는 컨테이너를 별도로 만들어 중앙 정렬합니다. */
+    /* Streamlit 메인 컨테이너 폭 조절 및 중앙 정렬 */
+    /* layout="wide"일 때 메인 콘텐츠를 중앙 정렬하고 고정 너비로 만듭니다. */
+    [data-testid="stAppViewContainer"] > .main {
+        padding: 0; /* 기본 패딩 제거 */
+    }
     [data-testid="stAppViewContainer"] > .main .block-container {
         max-width: 800px; /* 메인 콘텐츠의 최대 너비를 800px로 제한 */
+        margin: auto; /* 중앙 정렬 */
+        padding-top: 1rem; /* 상단 여백 (조정 가능) */
+        padding-bottom: 1rem; /* 하단 여백 (조정 가능) */
         padding-left: 1rem; /* 좌우 패딩을 조금 더 줄여 여백 확보 */
         padding-right: 1rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* 그림자 효과 */
+        border-radius: 8px; /* 모서리 둥글게 */
+        background-color: #fff; /* 메인 컨테이너 배경색을 흰색으로 설정 */
+        overflow: hidden; /* 자식 요소가 컨테이너를 벗어나지 않도록 숨김 */
     }
-
 
     /* 상단 디자인 BAR 스타일 */
     .top-design-bar {
@@ -53,10 +62,11 @@ custom_css = """
         text-align: center;
         border-top-left-radius: 8px;
         border-top-right-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        margin-left: -1rem; 
+        /* 메인 컨테이너 안에 있으므로 margin은 0으로 유지 */
+        margin-left: -1rem; /* block-container의 padding과 동일하게 음수 마진 설정 */
         margin-right: -1rem;
-        width: calc(100% + 2rem);
+        width: calc(100% + 2rem); /* 부모 너비에 맞게 조정 */
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
     .top-design-bar h1 {
         color: #fff; /* 제목 텍스트 색상 흰색 */
@@ -78,9 +88,10 @@ custom_css = """
         border-bottom-left-radius: 8px;
         border-bottom-right-radius: 8px;
         box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
-        margin-left: -1rem;
+        /* 메인 컨테이너 안에 있으므로 margin은 0으로 유지 */
+        margin-left: -1rem; /* block-container의 padding과 동일하게 음수 마진 설정 */
         margin-right: -1rem;
-        width: calc(100% + 2rem);
+        width: calc(100% + 2rem); /* 부모 너비에 맞게 조정 */
     }
     
     /* 대본 입력 방식 선택 섹션 */
@@ -238,15 +249,11 @@ custom_css = """
         padding-top: 20px; /* 상단 여백 */
     }
     /* 메인 콘텐츠가 사이드바에 가려지지 않도록 패딩 추가 */
-    .stApp {
-        /* layout="wide"를 사용하므로 main 컨테이너의 패딩을 조정합니다. */
-        /* stApp 자체에 직접 padding을 추가하면 전체 레이아웃에 영향을 줄 수 있습니다. */
-    }
-    [data-testid="stSidebar"] .stButton > button {
-        background-color: #3498db; /* 사이드바 버튼 색상 */
-    }
-    [data-testid="stSidebar"] .stButton > button:hover {
-        background-color: #2980b9;
+    /* layout="wide"를 사용하므로 main 컨테이너의 패딩을 조정합니다. */
+    /* stApp 자체에 직접 padding을 추가하면 전체 레이아웃에 영향을 줄 수 있습니다. */
+    [data-testid="stAppViewContainer"] > .main {
+        margin-left: 210px; /* 사이드바 너비만큼 메인 콘텐츠를 오른쪽으로 밀어냅니다. */
+        /* 기본 Streamlit 사이드바 너비가 210px 정도입니다. */
     }
 
     /* 반응형 디자인 */
@@ -258,8 +265,14 @@ custom_css = """
             width: 100%;
             padding-top: 0;
         }
+        /* 모바일에서는 메인 콘텐츠 마진 제거 */
+        [data-testid="stAppViewContainer"] > .main {
+            margin-left: 0;
+        }
         [data-testid="stAppViewContainer"] > .main .block-container {
             max-width: 100%; /* 모바일에서는 최대 너비 제거 */
+            border-radius: 0; /* 모바일에서는 모서리 둥글게 처리 제거 */
+            box-shadow: none; /* 모바일에서는 그림자 제거 */
             padding-left: 1rem;
             padding-right: 1rem;
         }
