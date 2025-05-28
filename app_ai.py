@@ -71,7 +71,7 @@ custom_css = """
     .top-design-bar h1 {
         color: #fff; /* 제목 텍스트 색상 흰색 */
         margin: 0;
-        font-size: 1.2em; /* 제목 글자 크기 조정 */
+        font-size: 1.0em; /* 제목 글자 크기 조정 (더 작게) */
         font-weight: 700;
         text-align: center; /* 가운데 정렬 */
         display: flex; /* flexbox 사용 (이모지와 텍스트 정렬) */
@@ -363,29 +363,6 @@ def split_text_into_slides_with_similarity(text_paragraphs, max_lines_per_slide,
                     sentence_lines = merged_lines
                     i += 1  # 추가로 하나 더 소비
 
-            # 기존 코드의 이 부분 로직은 유사성 스플릿과 충돌하여 제거했습니다.
-            # if sentence_lines > max_lines_per_slide:
-            #     wrapped_lines = textwrap.wrap(sentence, width=max_chars_per_line_ppt, break_long_words=True)
-            #     temp_text, temp_lines = "", 0
-            #     for line in wrapped_lines:
-            #         line_lines = calculate_text_lines(line, max_chars_per_line_ppt)
-            #         if temp_lines + line_lines <= max_lines_per_slide:
-            #             temp_text += line + "\n"
-            #             temp_lines += line_lines
-            #         else:
-            #             slides.append(temp_text.strip())
-            #             split_flags.append(True)
-            #             slide_number += 1
-            #             temp_text = line + "\n"
-            #             temp_lines = line_lines
-            #     if temp_text:
-            #         slides.append(temp_text.strip())
-            #         split_flags.append(True)
-            #         slide_number += 1
-            #     current_text, current_lines = "", 0
-            #     i += 1
-            #     continue
-
             if current_lines + sentence_lines <= max_lines_per_slide:
                 current_text += sentence + "\n"
                 current_lines += sentence_lines
@@ -541,7 +518,7 @@ with tab2:
 
 # 하단 디자인 BAR (버튼 포함)
 with st.container():
-    st.markdown('<div class="bottom-design-bar">', unsafe_allow_html=True) # bottom-bar -> bottom-design-bar
+    st.markdown('<div class="bottom-design-bar">', unsafe_allow_html=True) 
     if st.button("🚀 PPT 자동 생성 시작"):
         paragraphs = []
         target_file = None
