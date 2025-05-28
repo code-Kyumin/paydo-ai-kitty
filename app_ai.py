@@ -60,7 +60,7 @@ custom_css = """
     .top-design-bar h1 {
         color: #fff; /* 제목 텍스트 색상 흰색 */
         margin: 0;
-        font-size: 1.5em;
+        font-size: 1.2em; /* 제목 글자 크기 조정 (더 작게) */
         font-weight: 700;
         display: flex;
         align-items: center;
@@ -72,10 +72,10 @@ custom_css = """
     .bottom-design-bar {
         background-color: #2ecc71; /* 초록색 */
         color: #fff;
-        padding: 15px;
+        padding: 25px; /* 바와 버튼 사이의 간격 확보 */
         text-align: center;
         border-bottom-left-radius: 8px;
-        border-bottom-right-radius: 8px;
+        border-bottom-right-radius: 8gpx;
         box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
         margin-left: -1rem;
         margin-right: -1rem;
@@ -203,9 +203,9 @@ custom_css = """
         color: #777;
     }
 
-    /* PPT 자동 생성 시작 버튼 */
-    .stButton > button {
-        background-color: #2ecc71;
+    /* PPT 자동 생성 시작 버튼 (하단 바 내에 포함) */
+    .bottom-design-bar .stButton > button {
+        background-color: #2ecc71; /* 초록색 (바 색상과 동일하게 유지) */
         color: white;
         border: none;
         padding: 10px 20px;
@@ -220,15 +220,25 @@ custom_css = """
         gap: 10px;
         transition: background-color 0.3s ease;
     }
-    .stButton > button:hover {
+    .bottom-design-bar .stButton > button:hover {
         background-color: #27ae60;
     }
 
-    /* 사이드바 스타일 (기본 Streamlit 사이드바) */
+    /* 사이드바 스타일 */
     [data-testid="stSidebar"] {
         background-color: #e7eff6; /* 사이드바 배경색 */
         border-right: 1px solid #ddd;
         box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+        position: fixed; /* 브라우저 좌측에 고정 */
+        left: 0;
+        top: 0;
+        height: 100%;
+        z-index: 1000; /* 다른 요소 위에 표시 */
+        padding-top: 20px; /* 상단 여백 */
+    }
+    /* 메인 콘텐츠가 사이드바에 가려지지 않도록 패딩 추가 */
+    .stApp {
+        padding-left: 200px; /* 사이드바 너비만큼 왼쪽 패딩 추가 (기본 210px) */
     }
     [data-testid="stSidebar"] .stButton > button {
         background-color: #3498db; /* 사이드바 버튼 색상 */
@@ -245,6 +255,16 @@ custom_css = """
         }
         .top-design-bar, .bottom-design-bar {
             border-radius: 0;
+        }
+        /* 모바일에서는 사이드바를 숨기거나 다르게 동작하도록 설정할 수 있습니다. */
+        [data-testid="stSidebar"] {
+            position: relative; /* 모바일에서는 고정 해제 */
+            height: auto;
+            width: 100%;
+            padding-top: 0;
+        }
+        .stApp {
+            padding-left: 0; /* 모바일에서는 패딩 제거 */
         }
     }
 </style>
@@ -287,7 +307,7 @@ def smart_sentence_split(text):
     sentences = []
     for paragraph in paragraphs:
         # 서술어 단독 분리 방지를 위해 문장 끝 마침표 기준이 아닌, 약간 넓게 split
-        temp_sentences = re.split(r'(?<=[^\d][.!?])\s+(?=[\"\'\uAC00-\uD7A3])', paragraph)
+        temp_sentences = re.split(r'(?<=[^\d][.!?])\s+(?=[\"\'\uAC00-\D7A3])', paragraph)
         sentences.extend([s.strip() for s in temp_sentences if s.strip()])
     return sentences
 
@@ -405,22 +425,14 @@ with st.sidebar:
     st.markdown("---")
     st.header("PPT 설정")
     
-    # 슬라이드 수 설정 (기존 슬라이더는 제거하고, UI 로직에 맞게 조정)
-    #max_lines = st.slider("슬라이드당 최대 줄 수", 1, 10, 4) # 기존 코드의 슬라이더
-    #max_chars = st.slider("한 줄당 최대 글자 수", 10, 100, 18) # 기존 코드의 슬라이더
-    #font_size = st.slider("폰트 크기", 10, 60, 54) # 기존 코드의 슬라이더
-    #sim_threshold = st.slider("문맥 유사도 기준", 0.0, 1.0, 0.85, step=0.05) # 기존 코드의 슬라이더
-    
-    # UI 개선된 슬라이더
+    # 슬라이드 수 설정
     max_lines = st.slider("슬라이드당 최대 줄 수", 1, 10, 4, key='sidebar_max_lines')
     max_chars = st.slider("한 줄당 최대 글자 수", 10, 100, 18, key='sidebar_max_chars')
     font_size = st.slider("폰트 크기", 10, 60, 54, key='sidebar_font_size')
     sim_threshold = st.slider("문맥 유사도 기준", 0.0, 1.0, 0.85, step=0.05, key='sidebar_sim_threshold')
 
-    st.checkbox("요약 내용 포함 (미구현)") # 기존 코드에는 없던 기능, placeholder로 유지
-    st.radio("PPT 테마 선택 (미구현)", ["기본", "모던", "다크"], key='sidebar_theme') # 기존 코드에는 없던 기능, placeholder로 유지
+    # '요약 내용 포함', 'PPT 테마 선택', '설정 저장' 삭제됨
     
-    st.button("설정 저장 (동작 없음)", key='sidebar_save_settings') 
     st.markdown("---")
     st.write("문의: support@example.com")
 
@@ -444,8 +456,6 @@ with tab1:
     st.write("Word 파일 (.docx)을 업로드해주세요.")
 
     # 파일 업로더 위젯
-    # 기존 코드의 uploaded_file = st.file_uploader("📄 Word 파일 업로드", type=["docx"]) 대신
-    # UI 개선 코드의 커스텀 방식 사용
     uploaded_file_tab1 = st.file_uploader(
         "Upload your DOCX file here", # 이 텍스트는 내부적으로 사용되지만, CSS로 숨김.
         type=["docx"], # 허용되는 파일 형식
@@ -474,26 +484,21 @@ with tab1:
         st.markdown("- 다른 이름으로 저장 후 다시 시도해보세요.")
 
 with tab2:
-    # 기존 코드의 text_input = st.text_area("또는 텍스트 직접 입력:", height=300) 대신
     text_input_tab2 = st.text_area(
         "대본을 직접 입력하세요.",
-        height=200, # 기존 코드의 height=300에서 200으로 변경 (디자인 일관성)
+        height=200, 
         placeholder="여기에 대본을 입력해주세요...",
         help="여기에 입력된 텍스트로 PPT 대본이 생성됩니다."
     )
 
-# 하단 디자인 BAR
+# 하단 디자인 BAR (버튼 포함)
 with st.container():
     st.markdown('<div class="bottom-design-bar">', unsafe_allow_html=True)
-    # 기존 코드의 st.button("🚀 PPT 생성"): 대신 UI 개선 코드의 버튼 디자인 사용
     if st.button("🚀 PPT 자동 생성 시작"):
         paragraphs = []
         target_file = None
         target_text_input = ""
 
-        # 현재 활성화된 탭에 따라 입력값 선택
-        # Streamlit 탭은 활성화된 탭의 위젯 값만 유지합니다.
-        # 따라서, 두 탭의 입력값을 모두 확인해야 합니다.
         if uploaded_file_tab1 is not None:
             target_file = uploaded_file_tab1
         
