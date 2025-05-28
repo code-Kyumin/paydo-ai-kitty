@@ -14,7 +14,6 @@ from io import BytesIO
 from sentence_transformers import SentenceTransformer, util
 
 # Streamlit 세팅
-# 메인 콘텐츠를 가운데 배치하기 위해 "centered" 레이아웃 사용
 st.set_page_config(page_title="Paydo AI PPT", layout="centered")
 
 # CSS 스타일 정의
@@ -35,9 +34,8 @@ custom_css = """
     }
 
     /* Streamlit 메인 컨테이너 폭 조절 및 그림자, 모서리 둥글게 */
-    /* layout="centered" 상태에서 전체 앱 컨테이너의 최대 너비와 중앙 정렬을 제어 */
     [data-testid="stAppViewContainer"] {
-        max-width: 800px; /* 컨테이너 최대 너비 고정 (제목 길이에 맞추는 느낌) */
+        max-width: 800px; /* 컨테이너 최대 너비 */
         margin: auto; /* 페이지 중앙 정렬 */
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* 그림자 효과 */
         border-radius: 8px; /* 모서리 둥글게 */
@@ -53,7 +51,7 @@ custom_css = """
         margin-left: 210px; /* 사이드바 너비만큼 메인 콘텐츠를 오른쪽으로 밀어냅니다. */
     }
 
-    /* 상단 디자인 BAR 스타일 */
+    /* 상단 디자인 BAR 스타일 (기존 stHeader 오버라이드 대신 직접 마크다운에 적용) */
     .top-design-bar {
         background-color: #2c3e50; /* 어두운 파란색/회색 */
         color: #fff;
@@ -62,15 +60,18 @@ custom_css = """
         border-top-left-radius: 8px;
         border-top-right-radius: 8px;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        /* block-container의 기본 패딩을 덮기 위해 음수 마진 사용 */
+        /* Streamlit 기본 block-container의 패딩을 덮기 위해 음수 마진 사용 */
         margin-left: -1rem; 
         margin-right: -1rem;
         width: calc(100% + 2rem); /* 부모 너비에 맞춰 확장 */
+        position: sticky; /* 스크롤 시 상단에 고정 */
+        top: 0; /* 상단에 붙임 */
+        z-index: 999; /* 다른 요소 위에 표시되도록 */
     }
     .top-design-bar h1 {
         color: #fff; /* 제목 텍스트 색상 흰색 */
         margin: 0;
-        font-size: 1.2em; /* 제목 글자 크기 더 크게 조정 */
+        font-size: 1.2em; /* 제목 글자 크기 조정 */
         font-weight: 700;
         text-align: center; /* 가운데 정렬 */
         display: flex; /* flexbox 사용 (이모지와 텍스트 정렬) */
@@ -79,11 +80,11 @@ custom_css = """
         gap: 10px; /* 이모지와 텍스트 사이 간격 */
     }
 
-    /* 하단 디자인 BAR 스타일 */
-    .bottom-design-bar {
+    /* 하단 디자인 BAR 스타일 (버튼 포함) */
+    .bottom-design-bar { /* 클래스 이름을 'bottom-bar'에서 'bottom-design-bar'로 변경 */
         background-color: #A2D9CE; /* 옅은 녹색으로 변경 (더 얇게 보이도록) */
         color: #fff;
-        padding: 10px 20px; /* 패딩을 줄여 더 얇게 */
+        padding: 15px 20px; /* 패딩을 충분히 줘서 버튼과의 간격 확보 */
         text-align: center;
         border-bottom-left-radius: 8px;
         border-bottom-right-radius: 8px;
@@ -92,6 +93,9 @@ custom_css = """
         margin-left: -1rem;
         margin-right: -1rem;
         width: calc(100% + 2rem);
+        position: sticky; /* 스크롤 시 하단에 고정 */
+        bottom: 0; /* 하단에 붙임 */
+        z-index: 999;
     }
     
     /* 대본 입력 방식 선택 섹션 */
@@ -216,7 +220,7 @@ custom_css = """
     }
 
     /* PPT 자동 생성 시작 버튼 (하단 바 내에 포함) */
-    .bottom-design-bar .stButton > button {
+    .bottom-design-bar .stButton > button { /* 클래스 이름을 'bottom-bar'에서 'bottom-design-bar'로 변경 */
         background-color: orangered; /* 눈에 띄는 색상 (오렌지-레드) */
         color: white;
         border: none;
@@ -225,8 +229,8 @@ custom_css = """
         cursor: pointer;
         font-size: 1.3em; /* 폰트 크기 키우기 */
         font-weight: 700;
-        width: calc(100% - 40px); /* 좌우 패딩 고려하여 너비 조정 */
-        margin: 15px auto; /* 버튼 위 간격 띄우고 가운데 정렬 */
+        width: calc(100% - 40px); /* 부모 div의 좌우 패딩을 고려하여 너비 조정 (20px * 2) */
+        margin: 0px auto; /* 상단 간격은 부모 padding으로 확보, 좌우 auto로 가운데 정렬 */
         display: flex; /* flexbox 사용 */
         align-items: center;
         justify-content: center;
@@ -283,8 +287,8 @@ custom_css = """
             border-radius: 0;
         }
         .bottom-design-bar .stButton > button {
-             width: calc(100% - 20px); /* 모바일에서는 버튼 너비 100% (패딩 고려) */
-             margin: 15px auto; /* 좌우 마진 제거 */
+             width: calc(100% - 40px); /* 모바일에서도 패딩 고려하여 너비 조정 */
+             margin: 0px auto; /* 좌우 마진 제거 */
         }
     }
 </style>
@@ -358,6 +362,29 @@ def split_text_into_slides_with_similarity(text_paragraphs, max_lines_per_slide,
                     sentence = merged
                     sentence_lines = merged_lines
                     i += 1  # 추가로 하나 더 소비
+
+            # 기존 코드의 이 부분 로직은 유사성 스플릿과 충돌하여 제거했습니다.
+            # if sentence_lines > max_lines_per_slide:
+            #     wrapped_lines = textwrap.wrap(sentence, width=max_chars_per_line_ppt, break_long_words=True)
+            #     temp_text, temp_lines = "", 0
+            #     for line in wrapped_lines:
+            #         line_lines = calculate_text_lines(line, max_chars_per_line_ppt)
+            #         if temp_lines + line_lines <= max_lines_per_slide:
+            #             temp_text += line + "\n"
+            #             temp_lines += line_lines
+            #         else:
+            #             slides.append(temp_text.strip())
+            #             split_flags.append(True)
+            #             slide_number += 1
+            #             temp_text = line + "\n"
+            #             temp_lines = line_lines
+            #     if temp_text:
+            #         slides.append(temp_text.strip())
+            #         split_flags.append(True)
+            #         slide_number += 1
+            #     current_text, current_lines = "", 0
+            #     i += 1
+            #     continue
 
             if current_lines + sentence_lines <= max_lines_per_slide:
                 current_text += sentence + "\n"
@@ -458,10 +485,9 @@ with st.sidebar:
     st.markdown("---")
 
 
-# 상단 디자인 BAR
+# 상단 디자인 BAR (st.title 대신 직접 마크다운 사용)
 with st.container():
     st.markdown('<div class="top-design-bar">', unsafe_allow_html=True)
-    # 제목 텍스트 크기 및 가운데 정렬
     st.markdown("<h1>🎬 촬영 대본 PPT 자동 생성 AI (KoSimCSE)</h1>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -469,7 +495,6 @@ with st.container():
 st.markdown('<div class="input-method-selection-box"><span class="icon">📁</span> 대본 입력 방식 선택</div>', unsafe_allow_html=True)
 
 # 탭 메뉴 구성 (st.tabs 위젯 사용)
-# '블루 북' 이모지 적용
 tab1, tab2 = st.tabs(["📘 Word 파일 업로드", "📝 텍스트 직접 입력"])
 
 uploaded_file_tab1 = None 
@@ -516,7 +541,7 @@ with tab2:
 
 # 하단 디자인 BAR (버튼 포함)
 with st.container():
-    st.markdown('<div class="bottom-design-bar">', unsafe_allow_html=True)
+    st.markdown('<div class="bottom-design-bar">', unsafe_allow_html=True) # bottom-bar -> bottom-design-bar
     if st.button("🚀 PPT 자동 생성 시작"):
         paragraphs = []
         target_file = None
