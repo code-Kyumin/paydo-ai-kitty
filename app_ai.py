@@ -92,13 +92,18 @@ custom_css = """
         box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
         position: fixed; /* 뷰포트 하단에 고정 */
         bottom: 0; /* 하단에 붙임 */
-        left: 0; /* 좌측 끝에 붙임 */
-        width: 100%; /* 너비 100% */
+        /* 좌우 정렬을 위해 max-width와 margin: auto; 사용 */
+        left: 50%; /* 왼쪽 50% 이동 */
+        transform: translateX(-50%); /* 자신의 너비의 절반만큼 왼쪽으로 이동하여 중앙 정렬 */
+        width: 100%; /* 너비 100% (내부 컨테이너를 고려하여 조절) */
+        max-width: 1000px; /* 메인 컨테이너와 동일한 최대 너비 적용 */
         z-index: 1000; /* 다른 요소 위에 표시되도록 가장 높은 z-index 부여 */
         display: flex; /* 내부 버튼을 중앙 정렬하기 위한 flexbox */
         justify-content: center; /* 버튼을 중앙에 정렬 */
         align-items: center;
-        /* 메인 컨테이너의 max-width에 맞춰 중앙 정렬되도록 */
+        /* Streamlit 기본 패딩을 덮기 위해 음수 마진 사용 (stAppViewContainer와 동일하게) */
+        margin-left: -1rem; 
+        margin-right: -1rem;
         box-sizing: border-box; /* padding이 width에 포함되도록 */
     }
 
@@ -219,15 +224,8 @@ custom_css = """
         color: #777;
     }
 
-    /* PPT 자동 생성 시작 버튼을 감싸는 Streamlit div에 Flexbox 적용 */
-    .bottom-fixed-bar .stButton { /* 새로 만든 고정 바 안에 있는 stButton */
-        width: auto; /* 부모 flex 컨테이너 내에서 콘텐츠 크기에 맞게 너비 조절 */
-        display: flex; /* 내부 버튼을 가운데 정렬하기 위해 flexbox 적용 */
-        justify-content: center; /* 이 stButton 내부의 실제 버튼을 가운데 정렬 */
-    }
-    
-    /* 실제 PPT 자동 생성 시작 버튼 스타일 */
-    .bottom-fixed-bar .stButton > button { 
+    /* PPT 자동 생성 시작 버튼의 실제 button 태그 직접 타겟팅 */
+    .bottom-fixed-bar .stButton > button { /* 새로 만든 고정 바 안에 있는 stButton 안의 실제 button */
         background-color: orangered; /* 눈에 띄는 색상 (오렌지-레드) */
         color: white;
         border: none;
@@ -238,10 +236,11 @@ custom_css = """
         font-weight: 700;
         width: auto; /* 버튼 콘텐츠 크기에 맞게 너비 조절 */
         max-width: 400px; /* 최대 너비 제한 (너무 길어지는 것을 방지) */
-        display: flex; /* flexbox 사용 */
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
+        display: block; /* 블록 레벨 요소로 변경 */
+        margin: 0 auto; /* 좌우 마진을 자동으로 설정하여 중앙 정렬 */
+        align-items: center; /* (display: block으로 인해 이 속성은 효과 없음) */
+        justify-content: center; /* (display: block으로 인해 이 속성은 효과 없음) */
+        gap: 10px; /* (display: block으로 인해 이 속성은 효과 없음) */
         transition: background-color 0.3s ease;
     }
     .bottom-fixed-bar .stButton > button:hover {
@@ -525,43 +524,42 @@ with tab2:
     )
 
 # 고정된 하단 바 (새롭게 추가)
-with st.container():
-    st.markdown('<div class="bottom-fixed-bar">', unsafe_allow_html=True) 
-    if st.button("🚀 PPT 자동 생성 시작"):
-        paragraphs = []
-        target_file = None
-        target_text_input = ""
+st.markdown('<div class="bottom-fixed-bar">', unsafe_allow_html=True) 
+if st.button("🚀 PPT 자동 생성 시작"):
+    paragraphs = []
+    target_file = None
+    target_text_input = ""
 
-        if uploaded_file_tab1 is not None:
-            paragraphs = extract_text_from_word(uploaded_file_tab1)
-        elif text_input_tab2.strip():
-            paragraphs = [p.strip() for p in text_input_tab2.split("\n\n") if p.strip()]
-        else:
-            st.warning("PPT 생성을 위해 Word 파일을 업로드하거나 대본을 직접 입력해주세요.")
-            st.stop()
+    if uploaded_file_tab1 is not None:
+        paragraphs = extract_text_from_word(uploaded_file_tab1)
+    elif text_input_tab2.strip():
+        paragraphs = [p.strip() for p in text_input_tab2.split("\n\n") if p.strip()]
+    else:
+        st.warning("PPT 생성을 위해 Word 파일을 업로드하거나 대본을 직접 입력해주세요.")
+        st.stop()
 
-        if not paragraphs:
-            st.error("유효한 텍스트가 없습니다.")
-            st.stop()
+    if not paragraphs:
+        st.error("유효한 텍스트가 없습니다.")
+        st.stop()
 
-        with st.spinner("PPT 생성 중..."):
-            slides, flags = split_text_into_slides_with_similarity(
-                paragraphs, max_lines, max_chars, model, similarity_threshold=sim_threshold
+    with st.spinner("PPT 생성 중..."):
+        slides, flags = split_text_into_slides_with_similarity(
+            paragraphs, max_lines, max_chars, model, similarity_threshold=sim_threshold
+        )
+        ppt = create_ppt(slides, flags, max_chars, font_size)
+
+        if ppt:
+            ppt_io = io.BytesIO()
+            ppt.save(ppt_io)
+            ppt_io.seek(0)
+            st.download_button(
+                label="📥 PPT 다운로드",
+                data=ppt_io,
+                file_name="paydo_script_ai.pptx",
+                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
             )
-            ppt = create_ppt(slides, flags, max_chars, font_size)
-
-            if ppt:
-                ppt_io = io.BytesIO()
-                ppt.save(ppt_io)
-                ppt_io.seek(0)
-                st.download_button(
-                    label="📥 PPT 다운로드",
-                    data=ppt_io,
-                    file_name="paydo_script_ai.pptx",
-                    mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                )
-                st.success(f"총 {len(slides)}개의 슬라이드가 생성되었습니다.")
-                if any(flags):
-                    flagged = [i+1 for i, f in enumerate(flags) if f]
-                    st.warning(f"⚠️ 확인이 필요한 슬라이드: {flagged}")
-    st.markdown('</div>', unsafe_allow_html=True)
+            st.success(f"총 {len(slides)}개의 슬라이드가 생성되었습니다.")
+            if any(flags):
+                flagged = [i+1 for i, f in enumerate(flags) if f]
+                st.warning(f"⚠️ 확인이 필요한 슬라이드: {flagged}")
+st.markdown('</div>', unsafe_allow_html=True)
