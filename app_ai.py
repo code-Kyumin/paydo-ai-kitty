@@ -14,9 +14,8 @@ from io import BytesIO
 from sentence_transformers import SentenceTransformer, util
 
 # Streamlit 세팅
-# 레이아웃을 "wide"로 변경하여 메인 콘텐츠 영역을 유연하게 만듭니다.
-# 실제 콘텐츠의 너비는 CSS로 제어합니다.
-st.set_page_config(page_title="Paydo AI PPT", layout="wide")
+# 메인 콘텐츠를 가운데 배치하기 위해 다시 "centered" 레이아웃 사용
+st.set_page_config(page_title="Paydo AI PPT", layout="centered")
 
 # CSS 스타일 정의
 custom_css = """
@@ -24,7 +23,7 @@ custom_css = """
     /* 기본 폰트 설정 (Google Noto Sans KR 폰트 임포트) */
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
     
-    /* Font Awesome 아이콘 라이브러리 임포트 (파일 업로더 아이콘용) */
+    /* Font Awesome 아이콘 라이브러리 임포트 */
     @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
 
     /* Streamlit 앱의 전체적인 배경 및 폰트 설정 */
@@ -36,22 +35,15 @@ custom_css = """
         color: #333; /* 기본 텍스트 색상 */
     }
 
-    /* Streamlit 메인 컨테이너 폭 조절 및 중앙 정렬 */
-    /* layout="wide"일 때 메인 콘텐츠를 중앙 정렬하고 고정 너비로 만듭니다. */
-    [data-testid="stAppViewContainer"] > .main {
-        padding: 0; /* 기본 패딩 제거 */
-    }
-    [data-testid="stAppViewContainer"] > .main .block-container {
-        max-width: 800px; /* 메인 콘텐츠의 최대 너비를 800px로 제한 */
-        margin: auto; /* 중앙 정렬 */
-        padding-top: 1rem; /* 상단 여백 (조정 가능) */
-        padding-bottom: 1rem; /* 하단 여백 (조정 가능) */
-        padding-left: 1rem; /* 좌우 패딩을 조금 더 줄여 여백 확보 */
-        padding-right: 1rem;
+    /* Streamlit 메인 컨테이너 폭 조절 및 그림자, 모서리 둥글게 */
+    /* layout="centered" 상태에서 전체 앱 컨테이너의 최대 너비와 중앙 정렬을 제어 */
+    [data-testid="stAppViewContainer"] {
+        max-width: 800px; /* 컨테이너 최대 너비 고정 (제목 길이에 맞추는 느낌) */
+        margin: auto; /* 페이지 중앙 정렬 */
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* 그림자 효과 */
         border-radius: 8px; /* 모서리 둥글게 */
-        background-color: #fff; /* 메인 컨테이너 배경색을 흰색으로 설정 */
         overflow: hidden; /* 자식 요소가 컨테이너를 벗어나지 않도록 숨김 */
+        background-color: #fff; /* 메인 컨테이너 배경색을 흰색으로 설정 */
     }
 
     /* 상단 디자인 BAR 스타일 */
@@ -62,18 +54,19 @@ custom_css = """
         text-align: center;
         border-top-left-radius: 8px;
         border-top-right-radius: 8px;
-        /* 메인 컨테이너 안에 있으므로 margin은 0으로 유지 */
-        margin-left: -1rem; /* block-container의 padding과 동일하게 음수 마진 설정 */
-        margin-right: -1rem;
-        width: calc(100% + 2rem); /* 부모 너비에 맞게 조정 */
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        /* block-container의 기본 패딩을 덮기 위해 음수 마진 사용 */
+        margin-left: -1rem; 
+        margin-right: -1rem;
+        width: calc(100% + 2rem); /* 부모 너비에 맞춰 확장 */
     }
     .top-design-bar h1 {
         color: #fff; /* 제목 텍스트 색상 흰색 */
         margin: 0;
         font-size: 1.0em; /* 제목 글자 크기 더 작게 조정 */
         font-weight: 700;
-        display: flex;
+        text-align: center; /* 가운데 정렬 */
+        display: flex; /* flexbox 사용 (이모지와 텍스트 정렬) */
         align-items: center;
         justify-content: center;
         gap: 10px; /* 이모지와 텍스트 사이 간격 */
@@ -88,10 +81,10 @@ custom_css = """
         border-bottom-left-radius: 8px;
         border-bottom-right-radius: 8px;
         box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
-        /* 메인 컨테이너 안에 있으므로 margin은 0으로 유지 */
-        margin-left: -1rem; /* block-container의 padding과 동일하게 음수 마진 설정 */
+        /* block-container의 기본 패딩을 덮기 위해 음수 마진 사용 */
+        margin-left: -1rem;
         margin-right: -1rem;
-        width: calc(100% + 2rem); /* 부모 너비에 맞게 조정 */
+        width: calc(100% + 2rem);
     }
     
     /* 대본 입력 방식 선택 섹션 */
@@ -217,23 +210,24 @@ custom_css = """
 
     /* PPT 자동 생성 시작 버튼 (하단 바 내에 포함) */
     .bottom-design-bar .stButton > button {
-        background-color: #2ecc71; /* 초록색 (바 색상과 동일하게 유지) */
+        background-color: #FF5733; /* 눈에 띄는 색상 (오렌지-레드) */
         color: white;
         border: none;
-        padding: 10px 20px;
-        border-radius: 5px;
+        padding: 12px 25px; /* 패딩 증가로 버튼 크기 키우기 */
+        border-radius: 8px; /* 더 둥글게 */
         cursor: pointer;
-        font-size: 1.2em;
+        font-size: 1.3em; /* 폰트 크기 키우기 */
         font-weight: 700;
-        width: 100%;
-        display: flex;
+        width: calc(100% - 20px); /* 버튼 너비 조정 */
+        margin: 15px auto; /* 버튼 위 간격 띄우고 가운데 정렬 */
+        display: flex; /* flexbox 사용 */
         align-items: center;
         justify-content: center;
         gap: 10px;
         transition: background-color 0.3s ease;
     }
     .bottom-design-bar .stButton > button:hover {
-        background-color: #27ae60;
+        background-color: #E64A2F; /* 호버 색상 */
     }
 
     /* 사이드바 스타일 */
@@ -248,13 +242,18 @@ custom_css = """
         z-index: 1000; /* 다른 요소 위에 표시 */
         padding-top: 20px; /* 상단 여백 */
     }
-    /* 메인 콘텐츠가 사이드바에 가려지지 않도록 패딩 추가 */
-    /* layout="wide"를 사용하므로 main 컨테이너의 패딩을 조정합니다. */
-    /* stApp 자체에 직접 padding을 추가하면 전체 레이아웃에 영향을 줄 수 있습니다. */
-    [data-testid="stAppViewContainer"] > .main {
-        margin-left: 210px; /* 사이드바 너비만큼 메인 콘텐츠를 오른쪽으로 밀어냅니다. */
-        /* 기본 Streamlit 사이드바 너비가 210px 정도입니다. */
+    /* 사이드바 내부 요소에 대한 스타일 */
+    [data-testid="stSidebar"] h1 {
+        margin-bottom: 0.5em; /* 제목 아래 여백 */
     }
+    [data-testid="stSidebar"] h2 {
+        margin-bottom: 0.5em; /* 헤더 아래 여백 */
+    }
+    [data-testid="stSidebar"] label {
+        font-weight: 600; /* 라벨 볼드 처리 */
+        margin-bottom: 0.2em; /* 라벨 아래 여백 */
+    }
+
 
     /* 반응형 디자인 */
     @media (max-width: 768px) {
@@ -264,20 +263,20 @@ custom_css = """
             height: auto;
             width: 100%;
             padding-top: 0;
+            border-right: none;
+            box-shadow: none;
         }
-        /* 모바일에서는 메인 콘텐츠 마진 제거 */
-        [data-testid="stAppViewContainer"] > .main {
-            margin-left: 0;
-        }
-        [data-testid="stAppViewContainer"] > .main .block-container {
+        [data-testid="stAppViewContainer"] {
             max-width: 100%; /* 모바일에서는 최대 너비 제거 */
             border-radius: 0; /* 모바일에서는 모서리 둥글게 처리 제거 */
             box-shadow: none; /* 모바일에서는 그림자 제거 */
-            padding-left: 1rem;
-            padding-right: 1rem;
         }
         .top-design-bar, .bottom-design-bar {
             border-radius: 0;
+        }
+        .bottom-design-bar .stButton > button {
+             width: 100%; /* 모바일에서는 버튼 너비 100% */
+             margin: 15px 0; /* 좌우 마진 제거 */
         }
     }
 </style>
@@ -320,6 +319,7 @@ def smart_sentence_split(text):
     sentences = []
     for paragraph in paragraphs:
         # 서술어 단독 분리 방지를 위해 문장 끝 마침표 기준이 아닌, 약간 넓게 split
+        # 한글 문장 분리 시 '.(마침표)' 뒤에 한글이 오는 경우 오류 발생 방지
         temp_sentences = re.split(r'(?<=[^\d][.!?])\s+(?=[\"\'\uAC00-\D7A3])', paragraph)
         sentences.extend([s.strip() for s in temp_sentences if s.strip()])
     return sentences
@@ -433,26 +433,30 @@ def add_end_mark(slide):
 
 # 좌측 사이드바 (st.sidebar)
 with st.sidebar:
-    st.markdown('<div style="text-align: center; margin-bottom: 20px;"><i class="fas fa-magic" style="font-size: 3em; color: #3498db;"></i></div>', unsafe_allow_html=True)
-    st.title("메뉴")
-    st.markdown("---")
-    st.header("PPT 생성 옵션") # 'PPT 설정' -> 'PPT 생성 옵션'
-    st.markdown("여기서 세부 조건을 조정할 수 있습니다.") # 안내 문구 추가
+    # 상단의 메뉴와 이미지 삭제됨
+    # st.markdown('<div style="text-align: center; margin-bottom: 20px;"><i class="fas fa-magic" style="font-size: 3em; color: #3498db;"></i></div>', unsafe_allow_html=True)
+    # st.title("메뉴") 
+    st.markdown("---") # 구분선 유지
+    st.header("⚙️ PPT 생성 옵션") # 'PPT 설정' -> '⚙️ PPT 생성 옵션' (이모지 추가)
+    # 안내 문구 수정
+    st.markdown("<p style='font-size:0.9em; color:#555;'>생성될 PPT의 세부 옵션을 설정할 수 있습니다.</p>", unsafe_allow_html=True)
     
-    # 슬라이드 수 설정
-    max_lines = st.slider("슬라이드당 최대 줄 수", 1, 10, 4, key='sidebar_max_lines')
-    max_chars = st.slider("한 줄당 최대 글자 수", 10, 100, 18, key='sidebar_max_chars')
-    font_size = st.slider("폰트 크기", 10, 60, 54, key='sidebar_font_size')
-    sim_threshold = st.slider("문맥 유사도 기준", 0.0, 1.0, 0.85, step=0.05, key='sidebar_sim_threshold')
+    # 슬라이드 수 설정 (이모지 추가)
+    max_lines = st.slider("📏 슬라이드당 최대 줄 수", 1, 10, 4, key='sidebar_max_lines')
+    # 한 줄당 최대 글자 수 (이모지 추가)
+    max_chars = st.slider("🔠 한 줄당 최대 글자 수", 10, 100, 18, key='sidebar_max_chars')
+    # 폰트 크기 (이모지 추가)
+    font_size = st.slider("✍️ 폰트 크기", 10, 60, 54, key='sidebar_font_size')
+    # 문맥 유사도 기준 (이모지 추가)
+    sim_threshold = st.slider("💡 문맥 유사도 기준", 0.0, 1.0, 0.85, step=0.05, key='sidebar_sim_threshold')
 
-    # '요약 내용 포함', 'PPT 테마 선택', '설정 저장', '문의 이메일' 삭제됨
-    
     st.markdown("---")
 
 
 # 상단 디자인 BAR
 with st.container():
     st.markdown('<div class="top-design-bar">', unsafe_allow_html=True)
+    # 제목 텍스트 크기 더 작게 및 가운데 정렬
     st.markdown("<h1>🎬 촬영 대본 PPT 자동 생성 AI (KoSimCSE)</h1>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
