@@ -14,7 +14,7 @@ from io import BytesIO
 from sentence_transformers import SentenceTransformer, util
 
 # Streamlit 세팅
-st.set_page_config(page_title="Paydo AI PPT", layout="centered") # layout="centered" 유지
+st.set_page_config(page_title="Paydo AI PPT", layout="centered")
 # st.title("🎬 AI PPT 생성기 (KoSimCSE)") # 이 부분 제거
 
 # CSS 스타일 정의
@@ -111,7 +111,7 @@ custom_css = """
 
     /* 하단 고정 바 안에 있는 실제 버튼 (button 태그) 스타일 */
     .bottom-fixed-bar .stButton > button { 
-        background-color: #2ecc71; /* 초록색 (기존과 동일하게 유지) */
+        background-color: #007BFF; /* 눈에 띄는 파란색으로 변경 */
         color: white;
         border: none;
         padding: 12px 25px; /* 패딩 증가로 버튼 크기 키우기 */
@@ -126,9 +126,11 @@ custom_css = """
         justify-content: center;
         gap: 10px;
         transition: background-color 0.3s ease;
+        /* 버튼 자체를 가운데 정렬하도록 추가 */
+        margin: 0 auto; 
     }
     .bottom-fixed-bar .stButton > button:hover {
-        background-color: #27ae60; /* 호버 시 더 어두운 초록색 */
+        background-color: #0056b3; /* 호버 시 더 어두운 파란색 */
     }
 
     /* 대본 입력 방식 선택 섹션 */
