@@ -94,11 +94,6 @@ custom_css = """
         box-sizing: border-box; /* padding이 width에 포함되도록 */
         border-bottom-left-radius: 8px; /* 메인 컨테이너와 일치하도록 */
         border-bottom-right-radius: 8px; /* 메인 컨테이너와 일치하도록 */
-        
-        /* st.columns를 사용하여 버튼을 가운데 정렬할 것이므로, 여기서는 flexbox를 제거합니다. */
-        /* display: flex;  
-        justify-content: center; 
-        align-items: center; */
     }
 
     /* 하단 고정 바 안에 있는 실제 버튼 (button 태그) 스타일 */
@@ -118,9 +113,6 @@ custom_css = """
         justify-content: center;
         gap: 10px;
         transition: background-color 0.3s ease;
-        /* 버튼 자체를 가운데 정렬하도록 추가 - st.columns 사용 시 이 부분은 불필요하거나, 
-           Streamlit의 기본 버튼 스타일을 따르는 것이 좋습니다. */
-        /* margin: 0 auto; */ 
     }
     .bottom-fixed-bar .stButton > button:hover {
         background-color: #0056b3; /* 호버 시 더 어두운 파란색 */
@@ -485,7 +477,7 @@ with tab1:
     
     # 드래그 앤 드롭 영역 내 커스텀 텍스트 및 아이콘 (CSS로 위치 조정)
     st.markdown("""
-        <div style="text-align: center; margin-top: -160px; pointer-events: none; position: relative; z-index: 1;">
+        <div style="text-align: center; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 1;">
             <i class="fas fa-cloud-upload-alt" style="font-size: 3em; color: #3498db; margin-bottom: 5px;"></i>
             <p style="margin:0; font-size: 1.1em; color: #666;">Drag and drop file here</p>
             <p style="margin:0; font-size: 0.85em; color: #888; margin-top: 5px;">Limit 200MB per file • DOCX</p>
