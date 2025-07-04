@@ -91,7 +91,7 @@ custom_css = """
         z-index: 1000; /* 다른 요소 위에 표시되도록 가장 높은 z-index 부여 */
         box-sizing: border-box; /* padding이 width에 포함되도록 */
         border-bottom-left-radius: 8px; /* 메인 컨테이너와 일치하도록 */
-        border-bottom-right-radius: 8px; /* 메인 컨테이너와 일치하도록 */
+        border-bottom-right-radius: 88px; /* 메인 컨테이너와 일치하도록 */
     }
 
     /* 하단 고정 바 안에 있는 실제 버튼 (button 태그) 스타일 */
@@ -183,64 +183,31 @@ custom_css = """
     }
     
     /* Browse files 버튼 스타일 조정 */
-    [data-testid="stFileUploaderBrowseButton"] { /* Target the container of the button */
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        width: 100%;
-        height: 100%;
+    [data-testid="stFileUploaderBrowseButton"] { /* No specific positioning needed for this container */
+        /* Remove previous absolute positioning rules */
     }
 
     [data-testid="stFileUploaderBrowseButton"] > button {
-        background-color: #3498db; /* Keep the background color */
+        background-color: #3498db;
         color: white;
         border: none;
-        padding: 0; /* Remove padding as it will fill the container */
-        border-radius: 8px; /* Match dropzone border-radius */
+        padding: 10px 20px; /* Restore original padding */
+        border-radius: 5px; /* Restore original border-radius */
         cursor: pointer;
-        font-size: 0; /* Hide the default button text by setting font-size to 0 */
+        font-size: 0.9em; /* Restore original font size */
         font-weight: 600;
         transition: background-color 0.3s ease;
-        /* Important: Make it fill its parent (stFileUploaderBrowseButton) */
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
+        position: absolute; /* Keep absolute */
+        bottom: 20px; /* Restore original position */
+        right: 20px; /* Restore original position */
+        width: auto; /* Ensure it's not filling the parent */
+        height: auto; /* Ensure it's not filling the parent */
     }
     [data-testid="stFileUploaderBrowseButton"] > button:hover {
         background-color: #2980b9;
     }
 
-    /* 드래그 앤 드롭 영역 내 커스텀 텍스트 및 아이콘 위치 및 크기 조정 */
-    .custom-file-uploader-content {
-        text-align: center; 
-        position: absolute; 
-        top: 50%; /* Vertical center */
-        left: 50%; /* Horizontal center */
-        transform: translate(-50%, -50%); /* Adjust for own size */
-        pointer-events: none; 
-        z-index: 1; /* Make sure it's above the button */
-    }
-    .custom-file-uploader-content .fas {
-        font-size: 2.5em; /* 아이콘 크기 유지 */
-        color: #3498db; 
-        position: static; /* Remove relative positioning and top, let parent centering handle */
-        margin-bottom: 5px; /* Add a small margin back for separation from text */
-    }
-    .custom-file-uploader-content p:nth-of-type(1) { /* "Drag and drop file here" */
-        margin:0; 
-        font-size: 1.0em; /* 폰트 크기 유지 */
-        color: #666;
-    }
-    .custom-file-uploader-content p:nth-of-type(2) { /* "Limit 200MB per file • DOCX" */
-        margin:0; 
-        font-size: 0.8em; /* 폰트 크기 유지 */
-        color: #888; 
-        margin-top: 5px;
-    }
+    /* Custom file uploader content (icon and text) removed */
 
 
     /* 문제 해결 Expander (st.expander) 스타일 */
@@ -506,7 +473,8 @@ uploaded_file_tab1 = None
 text_input_tab2 = ""
 
 with tab1:
-    st.write("Word 파일 (.docx)을 업로드해주세요.")
+    # 텍스트를 "Word 파일 (.docx)을 업로드해주세요." 옆에 괄호로 나타나게 수정
+    st.write("Word 파일 (.docx)을 업로드해주세요. (파일을 드래그하거나 선택하여 업로드, 최대 200MB)")
 
     # 파일 업로더 위젯
     uploaded_file_tab1 = st.file_uploader(
@@ -516,14 +484,7 @@ with tab1:
         label_visibility="collapsed" # 기본 라벨 숨기기
     )
     
-    # 드래그 앤 드롭 영역 내 커스텀 텍스트 및 아이콘 (CSS로 위치 조정)
-    st.markdown("""
-        <div class="custom-file-uploader-content">
-            <i class="fas fa-cloud-upload-alt"></i>
-            <p>Drag and drop file here</p>
-            <p>Limit 200MB per file • DOCX</p>
-        </div>
-    """, unsafe_allow_html=True)
+    # Custom file uploader content (icon and text) HTML block removed
 
     if uploaded_file_tab1 is not None:
         st.success(f"파일 '{uploaded_file_tab1.name}'이(가) 업로드되었습니다.")
