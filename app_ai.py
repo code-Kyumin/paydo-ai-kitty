@@ -205,9 +205,9 @@ custom_css = """
     .custom-file-uploader-content {
         text-align: center; 
         position: absolute; 
-        top: 45%; /* 상단 위치 조정 - 위로 조금 올림 */
+        bottom: 70px; /* 'Browse files' 버튼 위로 위치 조정 */
         left: 50%; 
-        transform: translate(-50%, -50%); /* 변환 유지 */
+        transform: translateX(-50%); /* 가로 중앙 정렬 */
         pointer-events: none; 
         z-index: 1;
     }
