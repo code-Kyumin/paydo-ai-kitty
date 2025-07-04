@@ -322,14 +322,41 @@ def calculate_text_lines(text, max_chars_per_line):
 # 문장 분할
 def smart_sentence_split(text):
     paragraphs = text.split('\n')
-    sentences = []
+    all_sentences = []
+    
+    # Define a regex pattern that finds sentence-ending punctuation and any following whitespace.
+    # We use a capturing group around the punctuation + whitespace so re.split includes it in the results.
+    # This avoids complex lookbehinds/lookaheads that cause re.error.
+    sentence_splitter_pattern = re.compile(r'([.!?]\s*)')
+
     for paragraph in paragraphs:
-        # 서술어 단독 분리 방지를 위해 문장 끝 마침표 기준이 아닌, 약간 넓게 split
-        # 한글 문장 분리 시 '.(마침표)' 뒤에 한글이 오는 경우 오류 발생 방지
-        # re.error 방지를 위해 정규표현식에서 [^\d] 부분을 제거하여 단순화
-        temp_sentences = re.split(r'(?<=[.!?])\s+(?=[\"\'\uAC00-\D7A3])', paragraph)
-        sentences.extend([s.strip() for s in temp_sentences if s.strip()])
-    return sentences
+        if not paragraph.strip():
+            continue
+
+        # Split the paragraph by the sentence-ending punctuation.
+        # This will result in a list like: [text_segment, delimiter, text_segment, delimiter, ...]
+        # Example: "Hello. How are you?" -> ['Hello', '. ', 'How are you', '?', '']
+        parts = sentence_splitter_pattern.split(paragraph)
+
+        current_sentence_builder = []
+        for i in range(len(parts)):
+            part = parts[i]
+            if not part: # Skip empty strings that can result from split
+                continue
+            
+            current_sentence_builder.append(part)
+
+            # Check if the current part is a delimiter (by trying to match the delimiter pattern)
+            # or if it's the very last part of the paragraph (and not empty after stripping).
+            # This ensures that any trailing text is also captured as a sentence.
+            if sentence_splitter_pattern.search(part) or (i == len(parts) - 1 and part.strip()):
+                sentence = "".join(current_sentence_builder).strip()
+                if sentence: # Ensure the sentence is not empty after stripping
+                    all_sentences.append(sentence)
+                current_sentence_builder = [] # Reset for the next sentence
+
+    return all_sentences
+
 
 # 슬라이드 분할 with 유사도 + 짧은 문장 병합 개선
 def split_text_into_slides_with_similarity(text_paragraphs, max_lines_per_slide, max_chars_per_line_ppt, model, similarity_threshold=0.85):
@@ -484,8 +511,6 @@ with tab1:
         label_visibility="collapsed" # 기본 라벨 숨기기
     )
     
-    # Custom file uploader content (icon and text) HTML block removed
-
     if uploaded_file_tab1 is not None:
         st.success(f"파일 '{uploaded_file_tab1.name}'이(가) 업로드되었습니다.")
 
