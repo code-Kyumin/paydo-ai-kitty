@@ -164,7 +164,7 @@ custom_css = """
         border-radius: 8px;
         background-color: #f7fcfe;
         padding: 30px 20px;
-        height: 250px; /* 높이 고정 - 증가됨 */
+        height: 250px; /* 높이 고정 - 유지 */
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -200,6 +200,34 @@ custom_css = """
     [data-testid="stFileUploaderBrowseButton"] > button:hover {
         background-color: #2980b9;
     }
+
+    /* 드래그 앤 드롭 영역 내 커스텀 텍스트 및 아이콘 위치 및 크기 조정 */
+    .custom-file-uploader-content {
+        text-align: center; 
+        position: absolute; 
+        top: 45%; /* 상단 위치 조정 - 위로 조금 올림 */
+        left: 50%; 
+        transform: translate(-50%, -50%); /* 변환 유지 */
+        pointer-events: none; 
+        z-index: 1;
+    }
+    .custom-file-uploader-content .fas {
+        font-size: 2.5em; /* 아이콘 크기 줄임 */
+        color: #3498db; 
+        margin-bottom: 5px;
+    }
+    .custom-file-uploader-content p:nth-of-type(1) { /* "Drag and drop file here" */
+        margin:0; 
+        font-size: 1.0em; /* 폰트 크기 줄임 */
+        color: #666;
+    }
+    .custom-file-uploader-content p:nth-of-type(2) { /* "Limit 200MB per file • DOCX" */
+        margin:0; 
+        font-size: 0.8em; /* 폰트 크기 줄임 */
+        color: #888; 
+        margin-top: 5px;
+    }
+
 
     /* 문제 해결 Expander (st.expander) 스타일 */
     .stExpander {
@@ -475,10 +503,10 @@ with tab1:
     
     # 드래그 앤 드롭 영역 내 커스텀 텍스트 및 아이콘 (CSS로 위치 조정)
     st.markdown("""
-        <div style="text-align: center; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 1;">
-            <i class="fas fa-cloud-upload-alt" style="font-size: 3em; color: #3498db; margin-bottom: 5px;"></i>
-            <p style="margin:0; font-size: 1.1em; color: #666;">Drag and drop file here</p>
-            <p style="margin:0; font-size: 0.85em; color: #888; margin-top: 5px;">Limit 200MB per file • DOCX</p>
+        <div class="custom-file-uploader-content">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>Drag and drop file here</p>
+            <p>Limit 200MB per file • DOCX</p>
         </div>
     """, unsafe_allow_html=True)
 
