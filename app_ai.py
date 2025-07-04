@@ -183,19 +183,32 @@ custom_css = """
     }
     
     /* Browse files 버튼 스타일 조정 */
+    [data-testid="stFileUploaderBrowseButton"] { /* Target the container of the button */
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+    }
+
     [data-testid="stFileUploaderBrowseButton"] > button {
-        background-color: #3498db;
+        background-color: #3498db; /* Keep the background color */
         color: white;
         border: none;
-        padding: 10px 20px;
-        border-radius: 5px;
+        padding: 0; /* Remove padding as it will fill the container */
+        border-radius: 8px; /* Match dropzone border-radius */
         cursor: pointer;
-        font-size: 0.9em;
+        font-size: 0; /* Hide the default button text by setting font-size to 0 */
         font-weight: 600;
         transition: background-color 0.3s ease;
-        position: absolute; /* 드롭존 내에서 절대 위치 지정 */
-        bottom: 20px;
-        right: 20px;
+        /* Important: Make it fill its parent (stFileUploaderBrowseButton) */
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
     }
     [data-testid="stFileUploaderBrowseButton"] > button:hover {
         background-color: #2980b9;
@@ -205,27 +218,26 @@ custom_css = """
     .custom-file-uploader-content {
         text-align: center; 
         position: absolute; 
-        bottom: 70px; /* 'Browse files' 버튼 위로 위치 조정 */
-        left: 50%; 
-        transform: translateX(-50%); /* 가로 중앙 정렬 */
+        top: 50%; /* Vertical center */
+        left: 50%; /* Horizontal center */
+        transform: translate(-50%, -50%); /* Adjust for own size */
         pointer-events: none; 
-        z-index: 1;
+        z-index: 1; /* Make sure it's above the button */
     }
     .custom-file-uploader-content .fas {
-        font-size: 2.5em; /* 아이콘 크기 줄임 */
+        font-size: 2.5em; /* 아이콘 크기 유지 */
         color: #3498db; 
-        position: relative; /* 아이콘 자체를 상대적으로 이동 */
-        top: -25px; /* 아이콘을 위로 25px 이동 (기존 -15px에서 더 위로) */
-        margin-bottom: 0; /* 기존 마진 제거 */
+        position: static; /* Remove relative positioning and top, let parent centering handle */
+        margin-bottom: 5px; /* Add a small margin back for separation from text */
     }
     .custom-file-uploader-content p:nth-of-type(1) { /* "Drag and drop file here" */
         margin:0; 
-        font-size: 1.0em; /* 폰트 크기 줄임 */
+        font-size: 1.0em; /* 폰트 크기 유지 */
         color: #666;
     }
     .custom-file-uploader-content p:nth-of-type(2) { /* "Limit 200MB per file • DOCX" */
         margin:0; 
-        font-size: 0.8em; /* 폰트 크기 줄임 */
+        font-size: 0.8em; /* 폰트 크기 유지 */
         color: #888; 
         margin-top: 5px;
     }
@@ -347,7 +359,8 @@ def smart_sentence_split(text):
     for paragraph in paragraphs:
         # 서술어 단독 분리 방지를 위해 문장 끝 마침표 기준이 아닌, 약간 넓게 split
         # 한글 문장 분리 시 '.(마침표)' 뒤에 한글이 오는 경우 오류 발생 방지
-        temp_sentences = re.split(r'(?<=[^\d][.!?])\s+(?=[\"\'\uAC00-\D7A3])', paragraph)
+        # re.error 방지를 위해 정규표현식에서 [^\d] 부분을 제거하여 단순화
+        temp_sentences = re.split(r'(?<=[.!?])\s+(?=[\"\'\uAC00-\D7A3])', paragraph)
         sentences.extend([s.strip() for s in temp_sentences if s.strip()])
     return sentences
 
