@@ -1,5 +1,3 @@
-# Paydo AI PPT 생성기 with KoSimCSE 적용 및 오류 수정
-
 import streamlit as st
 from pptx import Presentation
 from pptx.util import Inches, Pt
@@ -166,7 +164,7 @@ custom_css = """
         border-radius: 8px;
         background-color: #f7fcfe;
         padding: 30px 20px;
-        height: 180px; /* 높이 고정 */
+        height: 250px; /* 높이 고정 - 증가됨 */
         display: flex;
         flex-direction: column;
         justify-content: center;
