@@ -214,7 +214,7 @@ custom_css = """
     .custom-file-uploader-content .fas {
         font-size: 2.5em; /* 아이콘 크기 줄임 */
         color: #3498db; 
-        margin-bottom: -10px; /* 아이콘을 텍스트 위로 더 올리기 */
+        margin-bottom: -20px; /* 아이콘을 텍스트 위로 더 올리기 */
     }
     .custom-file-uploader-content p:nth-of-type(1) { /* "Drag and drop file here" */
         margin:0; 
